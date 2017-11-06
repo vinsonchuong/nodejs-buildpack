@@ -21,6 +21,11 @@ import (
 	. "github.com/onsi/gomega"
 )
 
+func defaultCleanup(app *cutlass.App) {
+	DestroyApp(app)
+	os.RemoveAll(app.Path)
+}
+
 func UnbuiltBuildpack(app *cutlass.App) {
 	Context("Unbuilt buildpack (eg github)", func() {
 		var bpName string
@@ -34,7 +39,7 @@ func UnbuiltBuildpack(app *cutlass.App) {
 			app.Buildpacks = []string{bpName + "_buildpack"}
 		})
 		AfterEach(func() {
-			DestroyApp(app)
+			defaultCleanup(app)
 			Expect(cutlass.DeleteBuildpack(bpName)).To(Succeed())
 		})
 
@@ -102,7 +107,7 @@ func StagingWithBuildpackThatSetsEOL(depName string, copyBrats func(string) *cut
 			Expect(cutlass.CreateOrUpdateBuildpack(bpName, file)).To(Succeed())
 			os.Remove(file)
 
-			app = copyBrats(version)
+			app = copyBrats("")
 			app.Buildpacks = []string{bpName + "_buildpack"}
 			PushApp(app)
 		})
