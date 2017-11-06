@@ -80,12 +80,13 @@ func DeployingAnAppWithAnUpdatedVersionOfTheSameBuildpack(app *cutlass.App) {
 	})
 }
 
-func StagingWithBuildpackThatSetsEOL(depName string, app *cutlass.App) {
+func StagingWithBuildpackThatSetsEOL(depName string, copyBrats func(string) *cutlass.App) {
 	Describe("staging with "+depName+" buildpack that sets EOL on dependency", func() {
 		var (
 			eolDate       string
 			buildpackFile string
 			bpName        string
+			app           *cutlass.App
 		)
 		JustBeforeEach(func() {
 			eolDate = time.Now().AddDate(0, 0, 10).Format("2006-01-02")
@@ -101,11 +102,13 @@ func StagingWithBuildpackThatSetsEOL(depName string, app *cutlass.App) {
 			Expect(cutlass.CreateOrUpdateBuildpack(bpName, file)).To(Succeed())
 			os.Remove(file)
 
+			app = copyBrats(version)
 			app.Buildpacks = []string{bpName + "_buildpack"}
 			PushApp(app)
 		})
 		AfterEach(func() {
 			DestroyApp(app)
+			os.RemoveAll(app.Path)
 			Expect(cutlass.DeleteBuildpack(bpName)).To(Succeed())
 		})
 

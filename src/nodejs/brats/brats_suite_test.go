@@ -52,16 +52,18 @@ func CopyBrats(nodejsVersion string) *cutlass.App {
 	dir, err := cutlass.CopyFixture(filepath.Join(helper.Data.BpDir, "fixtures", "brats"))
 	Expect(err).ToNot(HaveOccurred())
 
-	file, err := ioutil.ReadFile(filepath.Join(dir, "package.json"))
-	Expect(err).ToNot(HaveOccurred())
-	obj := make(map[string]interface{})
-	Expect(json.Unmarshal(file, &obj)).To(Succeed())
-	engines, ok := obj["engines"].(map[string]interface{})
-	Expect(ok).To(BeTrue())
-	engines["node"] = nodejsVersion
-	file, err = json.Marshal(obj)
-	Expect(err).ToNot(HaveOccurred())
-	Expect(ioutil.WriteFile(filepath.Join(dir, "package.json"), file, 0644)).To(Succeed())
+	if nodejsVersion != "" {
+		file, err := ioutil.ReadFile(filepath.Join(dir, "package.json"))
+		Expect(err).ToNot(HaveOccurred())
+		obj := make(map[string]interface{})
+		Expect(json.Unmarshal(file, &obj)).To(Succeed())
+		engines, ok := obj["engines"].(map[string]interface{})
+		Expect(ok).To(BeTrue())
+		engines["node"] = nodejsVersion
+		file, err = json.Marshal(obj)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(ioutil.WriteFile(filepath.Join(dir, "package.json"), file, 0644)).To(Succeed())
+	}
 
 	return cutlass.New(dir)
 }
