@@ -124,7 +124,7 @@ func GenBpName(name string) string {
 	return "brats_" + buildpacks.BpLanguage + "_" + name + "_" + cutlass.RandStringRunes(6)
 }
 
-func CopyBrats(nodejsVersion string) string {
+func CopyBrats(nodejsVersion string) *cutlass.App {
 	dir, err := cutlass.CopyFixture(filepath.Join(bpDir, "fixtures", "brats"))
 	Expect(err).ToNot(HaveOccurred())
 
@@ -139,7 +139,7 @@ func CopyBrats(nodejsVersion string) string {
 	Expect(err).ToNot(HaveOccurred())
 	Expect(ioutil.WriteFile(filepath.Join(dir, "package.json"), file, 0644)).To(Succeed())
 
-	return dir
+	return cutlass.New(dir)
 }
 
 func AddDotProfileScriptToApp(dir string) {
