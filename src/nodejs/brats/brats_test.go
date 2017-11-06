@@ -11,11 +11,11 @@ import (
 )
 
 var _ = Describe("Nodejs buildpack", func() {
-	helper.UnbuiltBuildpack(cutlass.New(filepath.Join(bpDir, "fixtures", "brats")))
-	helper.DeployingAnAppWithAnUpdatedVersionOfTheSameBuildpack(cutlass.New(filepath.Join(bpDir, "fixtures", "brats")))
-	helper.StagingWithBuildpackThatSetsEOL("node", cutlass.New(filepath.Join(bpDir, "fixtures", "brats")))
-	helper.StagingWithADepThatIsNotTheLatest("node", cutlass.New(filepath.Join(bpDir, "fixtures", "brats")))
-	helper.StagingWithCustomBuildpackWithCredentialsInDependencies(`node\-[\d\.]+\-linux\-x64\-[\da-f]+\.tgz`, cutlass.New(filepath.Join(bpDir, "fixtures", "brats")))
+	helper.UnbuiltBuildpack(cutlass.New(filepath.Join(helper.Data.BpDir, "fixtures", "brats")))
+	helper.DeployingAnAppWithAnUpdatedVersionOfTheSameBuildpack(cutlass.New(filepath.Join(helper.Data.BpDir, "fixtures", "brats")))
+	helper.StagingWithBuildpackThatSetsEOL("node", cutlass.New(filepath.Join(helper.Data.BpDir, "fixtures", "brats")))
+	helper.StagingWithADepThatIsNotTheLatest("node", CopyBrats)
+	helper.StagingWithCustomBuildpackWithCredentialsInDependencies(`node\-[\d\.]+\-linux\-x64\-[\da-f]+\.tgz`, cutlass.New(filepath.Join(helper.Data.BpDir, "fixtures", "brats")))
 	helper.DeployAppWithExecutableProfileScript("node", CopyBrats)
 	helper.DeployAnAppWithSensitiveEnvironmentVariables()
 	helper.ForAllSupportedVersions("node", CopyBrats, func(nodeVersion string, app *cutlass.App) {

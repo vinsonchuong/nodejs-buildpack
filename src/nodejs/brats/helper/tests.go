@@ -27,7 +27,7 @@ func UnbuiltBuildpack(app *cutlass.App) {
 		BeforeEach(func() {
 			bpName = GenBpName("unbuilt")
 			cmd := exec.Command("git", "archive", "-o", filepath.Join("/tmp", bpName+".zip"), "HEAD")
-			cmd.Dir = bpDir()
+			cmd.Dir = Data.BpDir
 			Expect(cmd.Run()).To(Succeed())
 			Expect(cutlass.CreateOrUpdateBuildpack(bpName, filepath.Join("/tmp", bpName+".zip"))).To(Succeed())
 			Expect(os.Remove(filepath.Join("/tmp", bpName+".zip"))).To(Succeed())
@@ -61,11 +61,11 @@ func DeployingAnAppWithAnUpdatedVersionOfTheSameBuildpack(app *cutlass.App) {
 		})
 
 		It("prints useful warning message to stdout", func() {
-			Expect(cutlass.CreateOrUpdateBuildpack(bpName, buildpacks.UncachedFile)).To(Succeed())
+			Expect(cutlass.CreateOrUpdateBuildpack(bpName, Data.UncachedFile)).To(Succeed())
 			PushApp(app)
 			Expect(app.Stdout.String()).ToNot(ContainSubstring("buildpack version changed from"))
 
-			newFile, err := ModifyBuildpack(buildpacks.UncachedFile, func(path string, r io.Reader) (io.Reader, error) {
+			newFile, err := ModifyBuildpack(Data.UncachedFile, func(path string, r io.Reader) (io.Reader, error) {
 				if path == "VERSION" {
 					return strings.NewReader("NewVersion"), nil
 				}
@@ -111,7 +111,7 @@ func StagingWithBuildpackThatSetsEOL(depName string, app *cutlass.App) {
 
 		Context("using an uncached buildpack", func() {
 			BeforeEach(func() {
-				buildpackFile = buildpacks.UncachedFile
+				buildpackFile = Data.UncachedFile
 			})
 			It("warns about end of life", func() {
 				Expect(app.Stdout.String()).To(MatchRegexp(`WARNING.*` + depName + ` \S+ will no longer be available in new buildpacks released after`))
@@ -120,7 +120,7 @@ func StagingWithBuildpackThatSetsEOL(depName string, app *cutlass.App) {
 
 		Context("using a cached buildpack", func() {
 			BeforeEach(func() {
-				buildpackFile = buildpacks.CachedFile
+				buildpackFile = Data.CachedFile
 			})
 			It("warns about end of life", func() {
 				Expect(app.Stdout.String()).To(MatchRegexp(`WARNING.*` + depName + ` \S+ will no longer be available in new buildpacks released after`))
@@ -129,11 +129,11 @@ func StagingWithBuildpackThatSetsEOL(depName string, app *cutlass.App) {
 	})
 }
 
-func StagingWithADepThatIsNotTheLatest(depName string, app *cutlass.App) {
+func StagingWithADepThatIsNotTheLatest(depName string, copyBrats func(string) *cutlass.App) {
 	Describe("staging with a version of "+depName+" that is not the latest patch release in the manifest", func() {
-		var appDir string
+		var app *cutlass.App
 		BeforeEach(func() {
-			manifest, err := libbuildpack.NewManifest(bpDir, nil, time.Now())
+			manifest, err := libbuildpack.NewManifest(Data.BpDir, nil, time.Now())
 			Expect(err).ToNot(HaveOccurred())
 			raw := manifest.AllDependencyVersions(depName)
 			vs := make([]*semver.Version, len(raw))
@@ -144,10 +144,14 @@ func StagingWithADepThatIsNotTheLatest(depName string, app *cutlass.App) {
 			sort.Sort(semver.Collection(vs))
 			version := vs[0].Original()
 
-			app.Buildpacks = []string{buildpacks.Cached}
+			app = copyBrats(version)
+			app.Buildpacks = []string{Data.Cached}
 			PushApp(app)
 		})
-		AfterEach(func() { os.RemoveAll(appDir) })
+		AfterEach(func() {
+			DestroyApp(app)
+			os.RemoveAll(app.Path)
+		})
 
 		It("logs a warning that tells the user to upgrade the dependency", func() {
 			Expect(app.Stdout.String()).To(MatchRegexp("WARNING.*A newer version of " + depName + " is available in this buildpack"))
@@ -183,7 +187,7 @@ func StagingWithCustomBuildpackWithCredentialsInDependencies(depRegexp string, a
 		})
 		Context("using an uncached buildpack", func() {
 			BeforeEach(func() {
-				buildpackFile = buildpacks.UncachedFile
+				buildpackFile = Data.UncachedFile
 			})
 			It("does not include credentials in logged dependency uris", func() {
 				Expect(app.Stdout.String()).To(MatchRegexp(depRegexp))
@@ -193,7 +197,7 @@ func StagingWithCustomBuildpackWithCredentialsInDependencies(depRegexp string, a
 		})
 		Context("using a cached buildpack", func() {
 			BeforeEach(func() {
-				buildpackFile = buildpacks.UncachedFile
+				buildpackFile = Data.UncachedFile
 			})
 			It("does not include credentials in logged dependency file paths", func() {
 				Expect(app.Stdout.String()).To(MatchRegexp(depRegexp))
@@ -206,18 +210,21 @@ func StagingWithCustomBuildpackWithCredentialsInDependencies(depRegexp string, a
 
 func DeployAppWithExecutableProfileScript(depName string, copyBrats func(string) *cutlass.App) {
 	Describe("deploying an app that has an executable .profile script", func() {
+		var app *cutlass.App
 		BeforeEach(func() {
-			manifest, err := libbuildpack.NewManifest(bpDir, nil, time.Now())
+			manifest, err := libbuildpack.NewManifest(Data.BpDir, nil, time.Now())
 			dep, err := manifest.DefaultVersion(depName)
 			Expect(err).ToNot(HaveOccurred())
 
-			appDir := copyBrats(dep.Version)
-			AddDotProfileScriptToApp(appDir)
-			app = cutlass.New(appDir)
-			app.Buildpacks = []string{buildpacks.Cached}
+			app = copyBrats(dep.Version)
+			AddDotProfileScriptToApp(app.Path)
+			app.Buildpacks = []string{Data.Cached}
 			PushApp(app)
 		})
-		AfterEach(func() { os.RemoveAll(app.Path) })
+		AfterEach(func() {
+			DestroyApp(app)
+			os.RemoveAll(app.Path)
+		})
 
 		It("executes the .profile script", func() {
 			Expect(app.Stdout.String()).To(ContainSubstring("PROFILE_SCRIPT_IS_PRESENT_AND_RAN"))
@@ -232,9 +239,10 @@ func DeployAppWithExecutableProfileScript(depName string, copyBrats func(string)
 
 func DeployAnAppWithSensitiveEnvironmentVariables() {
 	Describe("deploying an app that has sensitive environment variables", func() {
+		var app *cutlass.App
 		BeforeEach(func() {
-			app = cutlass.New(filepath.Join(bpDir, "fixtures", "brats"))
-			app.Buildpacks = []string{buildpacks.Cached}
+			app = cutlass.New(filepath.Join(Data.BpDir, "fixtures", "brats"))
+			app.Buildpacks = []string{Data.Cached}
 			app.SetEnv("MY_SPECIAL_VAR", "SUPER SENSITIVE DATA")
 			PushApp(app)
 		})
@@ -287,10 +295,10 @@ func ForAllSupportedVersions(depName string, copyBrats func(string) *cutlass.App
 			version := v
 			It("with "+depName+" "+version, func() {
 				app = copyBrats(version)
-				app.Buildpacks = []string{buildpacks.Cached}
+				app.Buildpacks = []string{Data.Cached}
 				PushApp(app)
 
-				runTests(nodeVersion, app)
+				runTests(version, app)
 			})
 		}
 	})
