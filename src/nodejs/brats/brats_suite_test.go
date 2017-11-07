@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 	"flag"
 	"io/ioutil"
-	"nodejs/brats/helper"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/cloudfoundry/libbuildpack/bratshelper"
 	"github.com/cloudfoundry/libbuildpack/cutlass"
 
 	. "github.com/onsi/ginkgo"
@@ -24,10 +24,10 @@ func init() {
 
 var _ = SynchronizedBeforeSuite(func() []byte {
 	// Run once
-	return helper.InitBpData().Marshal()
+	return bratshelper.InitBpData().Marshal()
 }, func(data []byte) {
 	// Run on all nodes
-	helper.Data.Unmarshal(data)
+	bratshelper.Data.Unmarshal(data)
 
 	cutlass.SeedRandom()
 	cutlass.DefaultStdoutStderr = GinkgoWriter
@@ -38,9 +38,9 @@ var _ = SynchronizedAfterSuite(func() {
 }, func() {
 	// Run once
 	Expect(cutlass.DeleteOrphanedRoutes()).To(Succeed())
-	Expect(cutlass.DeleteBuildpack(strings.Replace(helper.Data.Cached, "_buildpack", "", 1))).To(Succeed())
-	Expect(cutlass.DeleteBuildpack(strings.Replace(helper.Data.Uncached, "_buildpack", "", 1))).To(Succeed())
-	Expect(os.Remove(helper.Data.CachedFile)).To(Succeed())
+	Expect(cutlass.DeleteBuildpack(strings.Replace(bratshelper.Data.Cached, "_buildpack", "", 1))).To(Succeed())
+	Expect(cutlass.DeleteBuildpack(strings.Replace(bratshelper.Data.Uncached, "_buildpack", "", 1))).To(Succeed())
+	Expect(os.Remove(bratshelper.Data.CachedFile)).To(Succeed())
 })
 
 func TestBrats(t *testing.T) {
@@ -49,7 +49,7 @@ func TestBrats(t *testing.T) {
 }
 
 func CopyBrats(nodejsVersion string) *cutlass.App {
-	dir, err := cutlass.CopyFixture(filepath.Join(helper.Data.BpDir, "fixtures", "brats"))
+	dir, err := cutlass.CopyFixture(filepath.Join(bratshelper.Data.BpDir, "fixtures", "brats"))
 	Expect(err).ToNot(HaveOccurred())
 
 	if nodejsVersion != "" {

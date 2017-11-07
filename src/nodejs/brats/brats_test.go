@@ -1,22 +1,21 @@
 package brats_test
 
 import (
-	"nodejs/brats/helper"
-
+	"github.com/cloudfoundry/libbuildpack/bratshelper"
 	"github.com/cloudfoundry/libbuildpack/cutlass"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Nodejs buildpack", func() {
-	helper.UnbuiltBuildpack("node", CopyBrats)
-	helper.DeployingAnAppWithAnUpdatedVersionOfTheSameBuildpack(CopyBrats)
-	helper.StagingWithBuildpackThatSetsEOL("node", CopyBrats)
-	helper.StagingWithADepThatIsNotTheLatest("node", CopyBrats)
-	helper.StagingWithCustomBuildpackWithCredentialsInDependencies(`node\-[\d\.]+\-linux\-x64\-[\da-f]+\.tgz`, CopyBrats)
-	helper.DeployAppWithExecutableProfileScript("node", CopyBrats)
-	helper.DeployAnAppWithSensitiveEnvironmentVariables(CopyBrats)
-	helper.ForAllSupportedVersions("node", CopyBrats, func(nodeVersion string, app *cutlass.App) {
+	bratshelper.UnbuiltBuildpack("node", CopyBrats)
+	bratshelper.DeployingAnAppWithAnUpdatedVersionOfTheSameBuildpack(CopyBrats)
+	bratshelper.StagingWithBuildpackThatSetsEOL("node", CopyBrats)
+	bratshelper.StagingWithADepThatIsNotTheLatest("node", CopyBrats)
+	bratshelper.StagingWithCustomBuildpackWithCredentialsInDependencies(`node\-[\d\.]+\-linux\-x64\-[\da-f]+\.tgz`, CopyBrats)
+	bratshelper.DeployAppWithExecutableProfileScript("node", CopyBrats)
+	bratshelper.DeployAnAppWithSensitiveEnvironmentVariables(CopyBrats)
+	bratshelper.ForAllSupportedVersions("node", CopyBrats, func(nodeVersion string, app *cutlass.App) {
 		By("runs a simple webserver", func() {
 			Expect(app.GetBody("/")).To(ContainSubstring("Hello World!"))
 		})

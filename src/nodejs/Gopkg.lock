@@ -14,10 +14,10 @@
   version = "v3.5.1"
 
 [[projects]]
-  branch = "master"
+  branch = "brats"
   name = "github.com/cloudfoundry/libbuildpack"
-  packages = [".","ansicleaner","cutlass","packager"]
-  revision = "2e46ccd2cf9daf702a1ea9281b7cf681739519cc"
+  packages = [".","ansicleaner","bratshelper","cutlass","packager"]
+  revision = "872b1a90f0cb6d446b8066ff6642fe0d0d4defa9"
 
 [[projects]]
   name = "github.com/elazarl/goproxy"
@@ -87,6 +87,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "caa22acdeb1007f4b257f0ea546f676c5c279eb19ba5e4560d64d700d07e7fe4"
+  inputs-digest = "467f7f5d79f10e3ea9b4c850a973af2a6cfb12953063c35ea5a21cba22608e89"
   solver-name = "gps-cdcl"
   solver-version = 1

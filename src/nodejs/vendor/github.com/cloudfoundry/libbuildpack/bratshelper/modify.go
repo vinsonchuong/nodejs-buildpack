@@ -1,4 +1,4 @@
-package helper
+package bratshelper
 
 import (
 	"archive/zip"

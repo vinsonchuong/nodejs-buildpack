@@ -3,7 +3,7 @@
 
 [[constraint]]
   name = "github.com/cloudfoundry/libbuildpack"
-  branch = "master"
+  branch = "brats"
 
 [[constraint]]
   name = "github.com/golang/mock"
