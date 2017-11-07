@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/cloudfoundry/libbuildpack/bratshelper"
 	"github.com/cloudfoundry/libbuildpack/cutlass"
@@ -66,4 +67,9 @@ func CopyBrats(nodejsVersion string) *cutlass.App {
 	}
 
 	return cutlass.New(dir)
+}
+
+func PushApp(app *cutlass.App) {
+	Expect(app.Push()).To(Succeed())
+	Eventually(app.InstanceStates, 20*time.Second).Should(Equal([]string{"RUNNING"}))
 }

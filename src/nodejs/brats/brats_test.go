@@ -16,6 +16,8 @@ var _ = Describe("Nodejs buildpack", func() {
 	bratshelper.DeployAppWithExecutableProfileScript("node", CopyBrats)
 	bratshelper.DeployAnAppWithSensitiveEnvironmentVariables(CopyBrats)
 	bratshelper.ForAllSupportedVersions("node", CopyBrats, func(nodeVersion string, app *cutlass.App) {
+		PushApp(app)
+
 		By("runs a simple webserver", func() {
 			Expect(app.GetBody("/")).To(ContainSubstring("Hello World!"))
 		})
