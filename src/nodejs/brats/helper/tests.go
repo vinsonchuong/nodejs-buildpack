@@ -26,9 +26,10 @@ func defaultCleanup(app *cutlass.App) {
 	os.RemoveAll(app.Path)
 }
 
-func UnbuiltBuildpack(app *cutlass.App) {
+func UnbuiltBuildpack(depName string, copyBrats func(string) *cutlass.App) {
 	Context("Unbuilt buildpack (eg github)", func() {
 		var bpName string
+		var app *cutlass.App
 		BeforeEach(func() {
 			bpName = GenBpName("unbuilt")
 			cmd := exec.Command("git", "archive", "-o", filepath.Join("/tmp", bpName+".zip"), "HEAD")
@@ -36,6 +37,7 @@ func UnbuiltBuildpack(app *cutlass.App) {
 			Expect(cmd.Run()).To(Succeed())
 			Expect(cutlass.CreateOrUpdateBuildpack(bpName, filepath.Join("/tmp", bpName+".zip"))).To(Succeed())
 			Expect(os.Remove(filepath.Join("/tmp", bpName+".zip"))).To(Succeed())
+			app = copyBrats("")
 			app.Buildpacks = []string{bpName + "_buildpack"}
 		})
 		AfterEach(func() {
@@ -47,21 +49,23 @@ func UnbuiltBuildpack(app *cutlass.App) {
 			PushApp(app)
 			Expect(app.Stdout.String()).To(ContainSubstring("-----> Download go "))
 
-			Expect(app.Stdout.String()).To(ContainSubstring("Installing " + bpLanguage()))
+			Expect(app.Stdout.String()).To(ContainSubstring("Installing " + depName))
 			Expect(app.GetBody("/")).To(ContainSubstring("Hello World!"))
 		})
 	})
 }
 
-func DeployingAnAppWithAnUpdatedVersionOfTheSameBuildpack(app *cutlass.App) {
+func DeployingAnAppWithAnUpdatedVersionOfTheSameBuildpack(copyBrats func(string) *cutlass.App) {
 	Describe("deploying an app with an updated version of the same buildpack", func() {
 		var bpName string
+		var app *cutlass.App
 		BeforeEach(func() {
 			bpName = GenBpName("changing")
+			app = copyBrats("")
 			app.Buildpacks = []string{bpName + "_buildpack"}
 		})
 		AfterEach(func() {
-			DestroyApp(app)
+			defaultCleanup(app)
 			Expect(cutlass.DeleteBuildpack(bpName)).To(Succeed())
 		})
 
@@ -112,8 +116,7 @@ func StagingWithBuildpackThatSetsEOL(depName string, copyBrats func(string) *cut
 			PushApp(app)
 		})
 		AfterEach(func() {
-			DestroyApp(app)
-			os.RemoveAll(app.Path)
+			defaultCleanup(app)
 			Expect(cutlass.DeleteBuildpack(bpName)).To(Succeed())
 		})
 
@@ -157,8 +160,7 @@ func StagingWithADepThatIsNotTheLatest(depName string, copyBrats func(string) *c
 			PushApp(app)
 		})
 		AfterEach(func() {
-			DestroyApp(app)
-			os.RemoveAll(app.Path)
+			defaultCleanup(app)
 		})
 
 		It("logs a warning that tells the user to upgrade the dependency", func() {
@@ -167,11 +169,12 @@ func StagingWithADepThatIsNotTheLatest(depName string, copyBrats func(string) *c
 	})
 }
 
-func StagingWithCustomBuildpackWithCredentialsInDependencies(depRegexp string, app *cutlass.App) {
+func StagingWithCustomBuildpackWithCredentialsInDependencies(depRegexp string, copyBrats func(string) *cutlass.App) {
 	Describe("staging with custom buildpack that uses credentials in manifest dependency uris", func() {
 		var (
 			buildpackFile string
 			bpName        string
+			app           *cutlass.App
 		)
 		JustBeforeEach(func() {
 			file, err := ModifyBuildpackManifest(buildpackFile, func(m *Manifest) {
@@ -187,10 +190,12 @@ func StagingWithCustomBuildpackWithCredentialsInDependencies(depRegexp string, a
 			Expect(cutlass.CreateOrUpdateBuildpack(bpName, file)).To(Succeed())
 			os.Remove(file)
 
+			app = copyBrats("")
 			app.Buildpacks = []string{bpName + "_buildpack"}
 			PushApp(app)
 		})
 		AfterEach(func() {
+			defaultCleanup(app)
 			Expect(cutlass.DeleteBuildpack(bpName)).To(Succeed())
 		})
 		Context("using an uncached buildpack", func() {
@@ -230,8 +235,7 @@ func DeployAppWithExecutableProfileScript(depName string, copyBrats func(string)
 			PushApp(app)
 		})
 		AfterEach(func() {
-			DestroyApp(app)
-			os.RemoveAll(app.Path)
+			defaultCleanup(app)
 		})
 
 		It("executes the .profile script", func() {
@@ -245,14 +249,17 @@ func DeployAppWithExecutableProfileScript(depName string, copyBrats func(string)
 	})
 }
 
-func DeployAnAppWithSensitiveEnvironmentVariables() {
+func DeployAnAppWithSensitiveEnvironmentVariables(copyBrats func(string) *cutlass.App) {
 	Describe("deploying an app that has sensitive environment variables", func() {
 		var app *cutlass.App
 		BeforeEach(func() {
-			app = cutlass.New(filepath.Join(Data.BpDir, "fixtures", "brats"))
+			app = copyBrats("")
 			app.Buildpacks = []string{Data.Cached}
 			app.SetEnv("MY_SPECIAL_VAR", "SUPER SENSITIVE DATA")
 			PushApp(app)
+		})
+		AfterEach(func() {
+			defaultCleanup(app)
 		})
 
 		It("will not write credentials to the app droplet", func() {
@@ -295,8 +302,7 @@ func ForAllSupportedVersions(depName string, copyBrats func(string) *cutlass.App
 
 		var app *cutlass.App
 		AfterEach(func() {
-			Expect(app.Destroy()).To(Succeed())
-			Expect(os.RemoveAll(app.Path)).To(Succeed())
+			defaultCleanup(app)
 		})
 
 		for _, v := range versions {
