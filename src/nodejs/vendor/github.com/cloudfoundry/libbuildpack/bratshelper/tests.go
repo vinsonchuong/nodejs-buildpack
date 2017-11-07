@@ -310,7 +310,6 @@ func ForAllSupportedVersions(depName string, copyBrats func(string) *cutlass.App
 			It("with "+depName+" "+version, func() {
 				app = copyBrats(version)
 				app.Buildpacks = []string{Data.Cached}
-				PushApp(app)
 
 				runTests(version, app)
 			})
