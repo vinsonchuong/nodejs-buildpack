@@ -27,6 +27,8 @@ else
 
         echo "-----> Running go build detect"
         GOROOT=$GoInstallDir/go GOPATH=$BUILDPACK_DIR $GoInstallDir/go/bin/go build -o $output_dir/detect nodejs/v3/detect/cmd
+
+        cp "$BUILDPACK_DIR/buildpack.toml" $output_dir
     } 1>&2
 
     $output_dir/detect

@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 )
 
-func CreateBuildPlan(detectData *libbuildpackV3.Detect) (error) {
-	packageJSONPath := filepath.Join(detectData.Application.Root, "package.json")
+func CreateBuildPlan(detector *libbuildpackV3.Detect) (error) {
+	packageJSONPath := filepath.Join(detector.Application.Root, "package.json")
 	if exists, err := libbuildpack.FileExists(packageJSONPath); err != nil {
 		return fmt.Errorf("error checking filepath %s", packageJSONPath)
 	} else if !exists {
@@ -22,7 +22,7 @@ func CreateBuildPlan(detectData *libbuildpackV3.Detect) (error) {
 		return err
 	}
 
-	detectData.BuildPlan["node"] = libbuildpackV3.BuildPlanDependency{Version: pkgJSON.Engines.Node}
+	detector.BuildPlan["node"] = libbuildpackV3.BuildPlanDependency{Version: pkgJSON.Engines.Node}
 
 	return nil
 }

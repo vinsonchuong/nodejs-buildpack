@@ -1,7 +1,6 @@
 package v3
 
 import (
-	"bytes"
 	"fmt"
 	"github.com/BurntSushi/toml"
 	libbuildpackV3 "github.com/buildpack/libbuildpack"
@@ -31,7 +30,6 @@ var _ = Describe("Nodejs V3 buildpack", func() {
 		err = libbuildpack.CopyDirectory(filepath.Join(bpDir, "fixtures", "simple_app"), appDir)
 		Expect(err).ToNot(HaveOccurred())
 
-		output := &bytes.Buffer{}
 		cmd := exec.Command(
 			"docker",
 			"run",
@@ -49,10 +47,10 @@ var _ = Describe("Nodejs V3 buildpack", func() {
 			"-plan",
 			"/workspace/plan.toml",
 		)
-		cmd.Stdout = output
-		cmd.Stderr = output
+		cmd.Stdout = os.Stderr
+		cmd.Stderr = os.Stderr
 		if err = cmd.Run(); err != nil {
-			Fail("failed to run V3 detection " + output.String())
+			Fail("failed to run V3 detection")
 		}
 
 		group := struct {
