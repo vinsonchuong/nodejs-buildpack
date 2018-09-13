@@ -9,5 +9,5 @@ import (
 
 func TestSupply(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Detection V3 Suite")
+	RunSpecs(t, "V3 Detection Suite")
 }

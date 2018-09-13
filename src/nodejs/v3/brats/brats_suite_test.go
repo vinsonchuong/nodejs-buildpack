@@ -1,4 +1,4 @@
-package v3
+package brats_test
 
 import (
 	. "github.com/onsi/ginkgo"
@@ -8,5 +8,5 @@ import (
 
 func TestBratsV3(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Brats V3 Suite")
+	RunSpecs(t, "V3 Brats Suite")
 }

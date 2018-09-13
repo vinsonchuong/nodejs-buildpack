@@ -5,6 +5,7 @@ import (
 	"fmt"
 	libbuildpackV3 "github.com/buildpack/libbuildpack"
 	"github.com/cloudfoundry/libbuildpack"
+	"nodejs/package_json"
 	"os"
 	"path/filepath"
 )
@@ -17,12 +18,14 @@ func CreateBuildPlan(detector *libbuildpackV3.Detect) (error) {
 		return fmt.Errorf("no package.json found in %s", packageJSONPath)
 	}
 
-	pkgJSON, err := loadPackageJSON(packageJSONPath)
+	pkgJSON, err := package_json.LoadPackageJSON(packageJSONPath, detector.Logger)
 	if err != nil {
 		return err
 	}
 
-	detector.BuildPlan["node"] = libbuildpackV3.BuildPlanDependency{Version: pkgJSON.Engines.Node}
+	detector.BuildPlan["node"] = libbuildpackV3.BuildPlanDependency{
+		Version: pkgJSON.Engines.Node,
+	}
 
 	return nil
 }
@@ -37,7 +40,6 @@ type engines struct {
 	NPM  string `json:"npm"`
 	Iojs string `json:"iojs"`
 }
-
 
 func loadPackageJSON(path string) (packageJSON, error) {
 	var p packageJSON

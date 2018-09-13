@@ -1,4 +1,4 @@
-package v3
+package brats_test
 
 import (
 	"fmt"
