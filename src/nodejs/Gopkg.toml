@@ -32,5 +32,5 @@ required = ["github.com/google/subcommands"]
   name = "github.com/buildpack/libbuildpack"
 
 [[constraint]]
-  branch = "master"
-  name = "github.com/buildpack/lifecycle"
+  name = "github.com/BurntSushi/toml"
+  version = "0.3.0"

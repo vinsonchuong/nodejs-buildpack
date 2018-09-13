@@ -2,15 +2,23 @@ package main
 
 import (
 	"fmt"
+	libbuildpackV3 "github.com/buildpack/libbuildpack"
+	"nodejs/v3/detect"
 	"os"
 )
 
-func main(){
-	//detect, err := libbuildpackV3.DefaultDetect()
-	//if err != nil {
-	//	os.Exit(100)
-	//}
+func main() {
+	detectData, err := libbuildpackV3.DefaultDetect()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to do default detection: %s", err)
+		os.Exit(100)
+	}
 
-	// TODO : pass detect somewhere to run logic
-	fmt.Fprintf(os.Stdout, `nodejs = { version = "FIX ME" }`)
+	err = detect.CreateBuildPlan(&detectData)
+	if err != nil {
+		detectData.Logger.Debug("failed nodejs detection: %s", err)
+		detectData.Fail()
+	}
+
+	fmt.Fprint(os.Stdout, detectData.BuildPlan.String())
 }
