@@ -1,4 +1,4 @@
-package detect_test
+package build_test
 
 import (
 	"fmt"

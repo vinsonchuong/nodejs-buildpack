@@ -11,11 +11,11 @@ import (
 func main() {
 	detector, err := libbuildpackV3.DefaultDetect()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to do default detection: %s", err)
+		fmt.Fprintf(os.Stderr, "failed to create default detector: %s", err)
 		os.Exit(100)
 	}
 
-	err = detect.CreateBuildPlan(&detector)
+	err = detect.UpdateBuildPlan(&detector)
 	if err != nil {
 		detector.Logger.Debug("failed nodejs detection: %s", err)
 		detector.Fail()
@@ -24,7 +24,7 @@ func main() {
 	encoder := toml.NewEncoder(os.Stdout)
 	err = encoder.Encode(detector.BuildPlan)
 	if err != nil {
-		detector.Logger.Debug("failed to encode build plan: %s", err)
+		detector.Logger.Debug("failed to print build plan: %s", err)
 		detector.Fail()
 	}
 }
