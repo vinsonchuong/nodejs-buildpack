@@ -24,7 +24,7 @@ func main() {
 	encoder := toml.NewEncoder(os.Stdout)
 	err = encoder.Encode(detector.BuildPlan)
 	if err != nil {
-		detector.Logger.Debug("failed to print build plan: %s", err)
+		detector.Logger.Debug("failed to write build plan: %s", err)
 		detector.Fail()
 	}
 }

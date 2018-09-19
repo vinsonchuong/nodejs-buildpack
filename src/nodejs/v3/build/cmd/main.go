@@ -12,7 +12,6 @@ import (
 
 func main() {
 	launchDir := os.Args[3]
-	fmt.Printf("launchDir: %s", launchDir)
 
 	builder, err := libbuildpackV3.DefaultBuild()
 	if err != nil {

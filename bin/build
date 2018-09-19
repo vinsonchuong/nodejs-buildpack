@@ -4,8 +4,6 @@ PLATFORM_DIR=$1
 CACHE_DIR=$2
 LAUNCH_DIR=$3
 
-echo "got into bin/build**********"
-
 # Version 3 Build
 # bin/build $stdin=<build plan toml> $stdout=<info logs> $sterr=<warning, error logs>
 
