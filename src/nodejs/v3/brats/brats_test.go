@@ -16,18 +16,16 @@ import (
 
 var _ = Describe("Nodejs V3 buildpack", func() {
 	It("should run V3 detection and build", func() {
-
-		bpSourceDir, err := cutlass.FindRoot()
+		sourceDir, err := cutlass.FindRoot()
 		Expect(err).ToNot(HaveOccurred())
 
-		tmpBpDir, err := ioutil.TempDir("/tmp", "bp")
+		destDir, err := ioutil.TempDir("/tmp", "bp")
 		Expect(err).ToNot(HaveOccurred())
-		fmt.Println(tmpBpDir)
 
-		err = dagger.BundleBuildpack(bpSourceDir, tmpBpDir)
+		err = dagger.BundleBuildpack(sourceDir, destDir)
 		Expect(err).ToNot(HaveOccurred())
-		//defer os.RemoveAll(tmpBpDir)
-		Fail("foo")
+		defer os.RemoveAll(destDir)
+
 		workspaceDir, err := ioutil.TempDir("/tmp", "workspace")
 		Expect(err).ToNot(HaveOccurred())
 		defer os.RemoveAll(workspaceDir)
@@ -35,19 +33,7 @@ var _ = Describe("Nodejs V3 buildpack", func() {
 		err = os.Chmod(workspaceDir, os.ModePerm)
 		Expect(err).ToNot(HaveOccurred())
 
-		appDir := filepath.Join(workspaceDir, "app")
-		err = os.Mkdir(appDir, os.ModePerm)
-		Expect(err).ToNot(HaveOccurred())
-
-		//err = libbuildpack.CopyDirectory(filepath.Join(bpDir, "fixtures", "simple_app"), appDir)
-		//Expect(err).ToNot(HaveOccurred())
-
-		// We must ensure container cannot modify app dir
-		//err = os.Chmod(appDir, 0755)
-		//Expect(err).ToNot(HaveOccurred())
-
 		// Run detect -----------------------------------------------------------------------------
-
 		cmd := exec.Command(
 			"docker",
 			"run",
@@ -55,15 +41,19 @@ var _ = Describe("Nodejs V3 buildpack", func() {
 			"-v",
 			fmt.Sprintf("%s:/workspace", workspaceDir),
 			"-v",
-			fmt.Sprintf("%s:/workspace/app", filepath.Join(bpSourceDir, "fixtures", "simple_app")),
+			fmt.Sprintf("%s:/workspace/app", filepath.Join(sourceDir, "fixtures", "simple_app")),
 			"-v",
-			fmt.Sprintf("%s:/buildpacks/org.cloudfoundry.buildpacks.nodejs/latest", tmpBpDir),
+			fmt.Sprintf("%s:/buildpacks/org.cloudfoundry.buildpacks.nodejs/latest", destDir),
+			"-v",
+			fmt.Sprintf("%s:/buildpacks/org.cloudfoundry.buildpacks.nodejs/1.6.32", destDir),
+			"-v",
+			fmt.Sprintf("%s:/input", filepath.Join(sourceDir, "fixtures", "v3")),
 			os.Getenv("CNB_BUILD_IMAGE"),
 			"/lifecycle/detector",
 			"-buildpacks",
 			"/buildpacks",
 			"-order",
-			"/buildpacks/org.cloudfoundry.buildpacks.nodejs/latest/fixtures/v3/order.toml",
+			"/input/order.toml",
 			"-group",
 			"/workspace/group.toml",
 			"-plan",
@@ -102,11 +92,11 @@ var _ = Describe("Nodejs V3 buildpack", func() {
 			"-v",
 			fmt.Sprintf("%s:/workspace", workspaceDir),
 			"-v",
-			fmt.Sprintf("%s:/workspace/app", filepath.Join(bpSourceDir, "fixtures", "simple_app")),
+			fmt.Sprintf("%s:/workspace/app", filepath.Join(sourceDir, "fixtures", "simple_app")),
 			"-v",
-			fmt.Sprintf("%s:/buildpacks/org.cloudfoundry.buildpacks.nodejs/latest", tmpBpDir),
+			fmt.Sprintf("%s:/buildpacks/org.cloudfoundry.buildpacks.nodejs/latest", destDir),
 			"-v",
-			fmt.Sprintf("%s:/buildpacks/org.cloudfoundry.buildpacks.nodejs/1.6.32", tmpBpDir),
+			fmt.Sprintf("%s:/buildpacks/org.cloudfoundry.buildpacks.nodejs/1.6.32", destDir),
 			os.Getenv("CNB_BUILD_IMAGE"),
 			"/lifecycle/builder",
 			"-buildpacks",

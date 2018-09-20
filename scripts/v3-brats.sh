@@ -5,8 +5,8 @@ cd "$( dirname "${BASH_SOURCE[0]}" )/.."
 source .envrc
 ./scripts/install_tools.sh
 
-GINKGO_NODES=${GINKGO_NODES:-3}
-GINKGO_ATTEMPTS=${GINKGO_ATTEMPTS:-2}
+GINKGO_NODES=${GINKGO_NODES:-1}
+GINKGO_ATTEMPTS=${GINKGO_ATTEMPTS:-1}
 
 export CNB_BUILD_IMAGE=${CNB_BUILD_IMAGE:-cfbuildpacks/cflinuxfs3-cnb-experimental:build}
 

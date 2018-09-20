@@ -1,7 +1,5 @@
 package dagger
 
-// TODO: After finalized, move dagger to its own repo and vendor
-
 import (
 	"io"
 	"os"
@@ -9,21 +7,14 @@ import (
 	"path/filepath"
 )
 
-func BundleBuildpack(bpSourceDir, destDir string) error {
-	err := copyFile(filepath.Join(bpSourceDir, "buildpack.toml"), filepath.Join(destDir, "buildpack.toml"))
-	if err != nil {
-		return err
-	}
-	err = os.Mkdir(filepath.Join(destDir, "bin"), os.ModePerm)
-	if err != nil {
+func BundleBuildpack(sourceDir, destDir string) error {
+	if err := copyFile(filepath.Join(sourceDir, "buildpack.toml"), filepath.Join(destDir, "buildpack.toml")); err != nil {
 		return err
 	}
 
-	//export BUILDPACK_DIR=`dirname $(readlink -f ${BASH_SOURCE%/*})`
-	//source "$BUILDPACK_DIR/scripts/install_go.sh"
-
-	//GOROOT=$GoInstallDir/go GOPATH=$BUILDPACK_DIR $GoInstallDir/go/bin/go build
-	// -o $output_dir/build nodejs/v3/build/cmd
+	if err := os.Mkdir(filepath.Join(destDir, "bin"), os.ModePerm); err != nil {
+		return err
+	}
 
 	for _, b := range []string{"detect", "build"} {
 		cmd := exec.Command(
@@ -33,10 +24,10 @@ func BundleBuildpack(bpSourceDir, destDir string) error {
 			filepath.Join(destDir, "bin", b),
 			filepath.Join("nodejs", "v3", b, "cmd"),
 		)
-		cmd.Env = append(os.Environ(), "GOPATH="+bpSourceDir)
+		cmd.Env = append(os.Environ(), "GOPATH="+sourceDir, "GOOS=linux")
 		cmd.Stdout = os.Stderr
 		cmd.Stderr = os.Stderr
-		if err = cmd.Run(); err != nil {
+		if err := cmd.Run(); err != nil {
 			return err
 		}
 	}
@@ -56,6 +47,7 @@ func copyFile(from, to string) error {
 		return err
 	}
 	defer destination.Close()
+
 	_, err = io.Copy(destination, source)
 	return err
 }
