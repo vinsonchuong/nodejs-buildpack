@@ -2,6 +2,7 @@ package build
 
 import (
 	libbuildpackV3 "github.com/buildpack/libbuildpack"
+	"github.com/cloudfoundry/libjavabuildpack"
 )
 
 func CreateLaunchMetadata() libbuildpackV3.LaunchMetadata {
@@ -13,4 +14,7 @@ func CreateLaunchMetadata() libbuildpackV3.LaunchMetadata {
 			},
 		},
 	}
+}
+
+func MakeNodeLayers(builder libjavabuildpack.Build) {
 }
