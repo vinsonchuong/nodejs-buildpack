@@ -67,6 +67,7 @@ type Supplier struct {
 	IsVendored         bool
 	Yarn               Yarn
 	NPM                NPM
+	Workspaces         []string
 }
 
 func Run(s *Supplier) error {
@@ -268,9 +269,28 @@ func (s *Supplier) MoveDependencyArtifacts() error {
 		return err
 	}
 
+	for _, workspace := range s.Workspaces {
+		workspaceName := strings.Split(workspace, "/")[0]
+		appPackages := filepath.Join(s.Stager.BuildDir(), workspaceName)
+		depsPackages := filepath.Join(s.Stager.DepDir(), workspaceName)
+
+		fmt.Println("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+		fmt.Println("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+		fmt.Println("workspaceName: ", workspaceName)
+		fmt.Println("appPackages", appPackages)
+		fmt.Println("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+		fmt.Println("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+
+		if err := os.Rename(appPackages, depsPackages); err != nil {
+			return err
+		}
+	}
+
 	if err := s.Stager.WriteEnvFile("NODE_PATH", nodePath); err != nil {
 		return err
 	}
+
+	fmt.Printf("Node Path: %s", nodePath)
 
 	return os.Setenv("NODE_PATH", nodePath)
 }
@@ -284,6 +304,7 @@ func (s *Supplier) ReadPackageJSON() error {
 			StartScript string `json:"start"`
 		} `json:"scripts"`
 		DevDependencies map[string]string `json:"devDependencies"`
+		Workspaces      []string          `json:"workspaces"`
 	}
 
 	if s.UseYarn, err = libbuildpack.FileExists(filepath.Join(s.Stager.BuildDir(), "yarn.lock")); err != nil {
@@ -307,6 +328,7 @@ func (s *Supplier) ReadPackageJSON() error {
 	s.PreBuild = p.Scripts.PreBuild
 	s.PostBuild = p.Scripts.PostBuild
 	s.StartScript = p.Scripts.StartScript
+	s.Workspaces = p.Workspaces
 
 	return nil
 }
@@ -576,23 +598,70 @@ func (s *Supplier) CreateDefaultEnv() error {
 		return err
 	}
 
-	scriptContents := `export NODE_HOME=%[1]s
+	workspacePaths := []interface{}{
+		filepath.Join("$DEPS_DIR", s.Stager.DepsIdx(), "node"),
+		filepath.Join("$DEPS_DIR", s.Stager.DepsIdx(), "node_modules"),
+		filepath.Join("$DEPS_DIR", s.Stager.DepsIdx(), "node_modules"),
+	}
+
+	var lnCommands []string
+
+	for _, workspace := range s.Workspaces {
+		fmt.Printf("========================================================")
+		fmt.Printf("workspace: %s", workspace)
+		workspaceName := strings.Split(workspace, string(os.PathSeparator))[0]
+		fmt.Printf("workspaceName: %s", workspaceName)
+
+		create_link_command := fmt.Sprintf(`ln -s "%s" "%s"`,
+			filepath.Join("$DEPS_DIR", s.Stager.DepsIdx(), workspaceName),
+			filepath.Join("$HOME", workspaceName),
+		)
+		lnCommands = append(lnCommands, create_link_command)
+	}
+
+	workspacePaths = append(workspacePaths, strings.Join(lnCommands, "\n"))
+	fmt.Printf("========================================================")
+	for _, lnc := range lnCommands {
+		fmt.Printf("lnCommands: %s", lnc)
+	}
+	fmt.Printf("workspacePaths: %s", workspacePaths)
+	fmt.Printf("========================================================")
+
+	// 	scriptContents := `export NODE_HOME=%[1]s
+	// export NODE_ENV=${NODE_ENV:-production}
+	// export MEMORY_AVAILABLE=$(echo $VCAP_APPLICATION | jq '.limits.mem')
+	// export WEB_MEMORY=${WEB_MEMORY:-512}
+	// export WEB_CONCURRENCY=${WEB_CONCURRENCY:-1}
+	// if [ ! -d "$HOME/node_modules" ]; then
+	// 	export NODE_PATH=${NODE_PATH:-"%[2]s"}
+	// 	echo "attempted home package path: %[3]s"
+	// 	ln -s "%[2]s" "$HOME/node_modules"
+	// 	"%s"
+	// else
+	// 	export NODE_PATH=${NODE_PATH:-"$HOME/node_modules"}
+	// fi
+	// export PATH=$PATH:"$HOME/bin":$NODE_PATH/.bin
+	// 	echo "NODEPATH: $NODE_PATH"
+	// `
+
+	scriptContents := `export NODE_HOME=%s
 export NODE_ENV=${NODE_ENV:-production}
 export MEMORY_AVAILABLE=$(echo $VCAP_APPLICATION | jq '.limits.mem')
 export WEB_MEMORY=${WEB_MEMORY:-512}
 export WEB_CONCURRENCY=${WEB_CONCURRENCY:-1}
 if [ ! -d "$HOME/node_modules" ]; then
-	export NODE_PATH=${NODE_PATH:-"%[2]s"}
-	ln -s "%[2]s" "$HOME/node_modules"
+	export NODE_PATH=${NODE_PATH:-"%s"}
+	ln -s "%s" "$HOME/node_modules"
+	%v
 else
 	export NODE_PATH=${NODE_PATH:-"$HOME/node_modules"}
 fi
 export PATH=$PATH:"$HOME/bin":$NODE_PATH/.bin
+	echo "NODEPATH: $NODE_PATH"
 `
 	return s.Stager.WriteProfileD("node.sh",
-		fmt.Sprintf(scriptContents,
-			filepath.Join("$DEPS_DIR", s.Stager.DepsIdx(), "node"),
-			filepath.Join("$DEPS_DIR", s.Stager.DepsIdx(), "node_modules")))
+		fmt.Sprintf(scriptContents, workspacePaths...),
+	)
 }
 
 func copyAll(srcDir, destDir string, files []string) error {
