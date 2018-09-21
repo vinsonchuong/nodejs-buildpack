@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/BurntSushi/toml"
 	libbuildpackV3 "github.com/buildpack/libbuildpack"
+	"github.com/cloudfoundry/libbuildpack/cutlass"
 	"io"
 	"io/ioutil"
 	"os"
@@ -12,7 +13,7 @@ import (
 )
 
 type Dagger struct {
-	rootDir, workspaceDir, buildpackDir string
+	rootDir, workspaceDir, buildpackDir, packDir string
 }
 
 func NewDagger(rootDir string) (*Dagger, error) {
@@ -34,10 +35,16 @@ func NewDagger(rootDir string) (*Dagger, error) {
 		return nil, err
 	}
 
+	packDir, err := ioutil.TempDir("/tmp", "pack")
+	if err != nil {
+		return nil, err
+	}
+
 	return &Dagger{
 		rootDir:      rootDir,
 		workspaceDir: workspaceDir,
 		buildpackDir: buildpackDir,
+		packDir:      packDir,
 	}, nil
 }
 
@@ -47,6 +54,9 @@ func (d *Dagger) Destroy() {
 
 	os.RemoveAll(d.buildpackDir)
 	d.buildpackDir = ""
+
+	os.RemoveAll(d.packDir)
+	d.packDir = ""
 }
 
 func (d *Dagger) BundleBuildpack() error {
@@ -194,6 +204,74 @@ func (d *Dagger) Build(appDir string) (*BuildResult, error) {
 		LaunchMetadata: launchMetadata,
 		Layer:          nodeLayer,
 	}, nil
+}
+
+func (d *Dagger) Pack(appDir string) error {
+
+	// TODO : replace the following with pack create-builder when it is ready
+
+	cidFile := filepath.Join(d.packDir, cutlass.RandStringRunes(16))
+
+	cmd := exec.Command(
+		"docker",
+		"run",
+		"-itd",
+		"-v",
+		fmt.Sprintf("%s:/buildpacks/org.cloudfoundry.buildpacks.nodejs/latest", d.buildpackDir),
+		"-v",
+		fmt.Sprintf("%s:/buildpacks/org.cloudfoundry.buildpacks.nodejs/1.6.32", d.buildpackDir),
+		"--cidfile",
+		cidFile,
+		os.Getenv("CNB_BUILD_IMAGE"),
+		"bash",
+	)
+	cmd.Stdout = os.Stderr
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+
+	var cid string
+	if b, err := ioutil.ReadFile(cidFile); err != nil {
+		return err
+	} else {
+		cid = string(b[:12])
+	}
+
+	//defer func() {
+	//	exec.Command("docker", "kill", cid)
+	//}()
+
+	cmd = exec.Command(
+		"docker",
+		"cp",
+		filepath.Join(d.rootDir, "fixtures", "v3", "order.toml"),
+		fmt.Sprintf("%s:/buildpacks/order.toml", cid),
+	)
+	cmd.Stdout = os.Stderr
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+
+	iid := cutlass.RandStringRunes(20)
+	cmd = exec.Command(
+		"docker",
+		"commit",
+		cid,
+		iid,
+	)
+	cmd.Stdout = os.Stderr
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+
+	fmt.Println(iid)
+
+	// TODO : remove above the above when pack create-builder works
+
+	return nil
 }
 
 func copyFile(from, to string) error {
