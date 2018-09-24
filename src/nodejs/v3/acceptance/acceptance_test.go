@@ -32,7 +32,14 @@ var _ = Describe("Nodejs V3 buildpack", func() {
 	})
 
 	It("should create a working app in an OCI image", func() {
-		err := dagg.Pack(filepath.Join(rootDir, "fixtures", "simple_app"))
+		app, err := dagg.Pack(filepath.Join(rootDir, "fixtures", "simple_app"))
+		Expect(err).ToNot(HaveOccurred())
+
+		err = app.Start()
+		Expect(err).ToNot(HaveOccurred())
+		defer app.Destroy()
+
+		err = app.HTTPGet("/")
 		Expect(err).ToNot(HaveOccurred())
 	})
 })

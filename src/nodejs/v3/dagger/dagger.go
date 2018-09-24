@@ -1,15 +1,19 @@
 package dagger
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/BurntSushi/toml"
 	libbuildpackV3 "github.com/buildpack/libbuildpack"
 	"github.com/cloudfoundry/libbuildpack/cutlass"
 	"io"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
+	"time"
 )
 
 type Dagger struct {
@@ -206,70 +210,99 @@ func (d *Dagger) Build(appDir string) (*BuildResult, error) {
 	}, nil
 }
 
-func (d *Dagger) Pack(appDir string) error {
+func (d *Dagger) Pack(appDir string) (*App, error) {
 
 	// TODO : replace the following with pack create-builder when it is ready
+	const originalImage = "cnb-pack-builder"
 
-	cidFile := filepath.Join(d.packDir, cutlass.RandStringRunes(16))
-
-	cmd := exec.Command(
-		"docker",
-		"run",
-		"-itd",
-		"-v",
-		fmt.Sprintf("%s:/buildpacks/org.cloudfoundry.buildpacks.nodejs/latest", d.buildpackDir),
-		"-v",
-		fmt.Sprintf("%s:/buildpacks/org.cloudfoundry.buildpacks.nodejs/1.6.32", d.buildpackDir),
-		"--cidfile",
-		cidFile,
-		os.Getenv("CNB_BUILD_IMAGE"),
-		"bash",
-	)
+	cmd := exec.Command("pack", "create-builder", originalImage, "-b", filepath.Join(d.rootDir, "fixtures", "v3", "builder.toml"))
 	cmd.Stdout = os.Stderr
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
-		return err
+		return nil, err
 	}
 
-	var cid string
-	if b, err := ioutil.ReadFile(cidFile); err != nil {
-		return err
-	} else {
-		cid = string(b[:12])
-	}
-
-	//defer func() {
-	//	exec.Command("docker", "kill", cid)
-	//}()
-
-	cmd = exec.Command(
-		"docker",
-		"cp",
-		filepath.Join(d.rootDir, "fixtures", "v3", "order.toml"),
-		fmt.Sprintf("%s:/buildpacks/order.toml", cid),
-	)
+	const builderImage = "cnb-acceptance-builder"
+	cmd = exec.Command("docker", "build", filepath.Join(d.rootDir, "fixtures", "v3"), "-t", builderImage)
 	cmd.Stdout = os.Stderr
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
-		return err
+		return nil, err
 	}
-
-	iid := cutlass.RandStringRunes(20)
-	cmd = exec.Command(
-		"docker",
-		"commit",
-		cid,
-		iid,
-	)
-	cmd.Stdout = os.Stderr
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		return err
-	}
-
-	fmt.Println(iid)
-
 	// TODO : remove above the above when pack create-builder works
+
+	appImageName := cutlass.RandStringRunes(16)
+	cmd = exec.Command("pack", "build", appImageName, "--builder", builderImage)
+	cmd.Dir = appDir
+	cmd.Stdout = os.Stderr
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return nil, err
+	}
+	return &App{imageName: appImageName}, nil
+}
+
+type App struct {
+	imageName   string
+	containerId string
+	port        string
+}
+
+func (a *App) Start() error {
+	buf := &bytes.Buffer{}
+
+	cmd := exec.Command("docker", "run", "-d", "-P", a.imageName)
+	cmd.Stdout = buf
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+	a.containerId = buf.String()[:12]
+
+	// TODO : implement a timer that checks health and bails out after X tries
+	// but for now lets just sleep :)
+	// cmd = exec.Command("docker", "inspect", "-f", "{{.State.Health.Status}}", a.containerId)
+	fmt.Fprintf(os.Stderr, "Waiting for container to become healthy...")
+	time.Sleep(35 * time.Second)
+
+	cmd = exec.Command("docker", "container", "port", a.containerId)
+	cmd.Stdout = buf
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+	a.port = strings.TrimSpace(strings.Split(buf.String(), ":")[1])
+
+	return nil
+}
+
+func (a *App) Destroy() error {
+	if a.containerId == "" {
+		return nil
+	}
+
+	cmd := exec.Command("docker", "stop", a.containerId)
+	cmd.Stdout = os.Stderr
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+
+	a.containerId = ""
+	a.port = ""
+
+	return nil
+}
+
+func (a *App) HTTPGet(path string) error {
+	resp, err := http.Get("http://localhost:" + a.port + path)
+	if err != nil {
+		return err
+	}
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return fmt.Errorf("received bad response from application")
+	}
 
 	return nil
 }
