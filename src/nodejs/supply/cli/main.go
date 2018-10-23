@@ -37,6 +37,7 @@ func main() {
 		os.Exit(10)
 	}
 	installer := libbuildpack.NewInstaller(manifest)
+	installer.SetVersionLine("node", "minor")
 
 	stager := libbuildpack.NewStager(os.Args[1:], logger, manifest)
 	if err := stager.CheckBuildpackValid(); err != nil {
