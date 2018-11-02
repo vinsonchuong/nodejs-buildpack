@@ -73,6 +73,12 @@ type Supplier struct {
 func Run(s *Supplier) error {
 	return checksum.Do(s.Stager.BuildDir(), s.Log.Debug, func() error {
 		s.Log.BeginStep("Installing binaries")
+
+		s.Log.BeginStep("BUILD_DIR: %s", s.Stager.BuildDir())
+		s.Log.BeginStep("CACHE_DIR: %s", s.Stager.CacheDir())
+		s.Log.BeginStep("DepDir: %s", s.Stager.DepDir())
+		s.Log.BeginStep("DepsIdx: %s", s.Stager.DepsIdx())
+
 		if err := s.LoadPackageJSON(); err != nil {
 			s.Log.Error("Unable to load package.json: %s", err.Error())
 			return err
