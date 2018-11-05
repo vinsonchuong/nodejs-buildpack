@@ -103,10 +103,7 @@ func TestBearerTransport(t *testing.T) {
 			if got, want := r.Header.Get("Authorization"), "Bearer "+expectedToken; got != want {
 				t.Errorf("Header.Get(Authorization); got %v, want %v", got, want)
 			}
-			if r.URL.Path == "/v2/auth" {
-				http.Redirect(w, r, "/redirect", http.StatusMovedPermanently)
-				return
-			}
+
 			if strings.Contains(r.URL.Path, "blobs") {
 				http.Redirect(w, r, blobServer.URL, http.StatusFound)
 				return
@@ -142,50 +139,4 @@ func TestBearerTransport(t *testing.T) {
 	}
 }
 
-func TestBearerTransportTokenRefresh(t *testing.T) {
-	initialToken := "foo"
-	refreshedToken := "bar"
-
-	server := httptest.NewServer(
-		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			hdr := r.Header.Get("Authorization")
-			if hdr == "Bearer "+refreshedToken {
-				w.WriteHeader(http.StatusOK)
-				return
-			}
-			if strings.HasPrefix(hdr, "Basic ") {
-				w.Write([]byte(fmt.Sprintf(`{"token": %q}`, refreshedToken)))
-			}
-
-			w.WriteHeader(http.StatusUnauthorized)
-			return
-		}))
-	defer server.Close()
-
-	u, err := url.Parse(server.URL)
-	registry, err := name.NewRegistry(u.Host, name.WeakValidation)
-	if err != nil {
-		t.Errorf("Unexpected error during NewRegistry: %v", err)
-	}
-
-	bearer := &authn.Bearer{Token: initialToken}
-	transport := &bearerTransport{
-		inner:    http.DefaultTransport,
-		bearer:   bearer,
-		basic:    &authn.Basic{},
-		registry: registry,
-		realm:    server.URL,
-	}
-	client := http.Client{Transport: transport}
-
-	res, err := client.Get(fmt.Sprintf("http://%s/v2/foo/bar/blobs/blah", u.Host))
-	if err != nil {
-		t.Errorf("Unexpected error during client.Get: %v", err)
-	}
-	if res.StatusCode != http.StatusOK {
-		t.Errorf("client.Get final StatusCode got %v, want: %v", res.StatusCode, http.StatusOK)
-	}
-	if transport.bearer.Token != refreshedToken {
-		t.Errorf("Expected Bearer token to be refreshed, got %v, want %v", bearer.Token, refreshedToken)
-	}
-}
+// TODO(mattmoor): 401 response prompts a refresh (NYI)

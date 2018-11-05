@@ -46,38 +46,22 @@ var _ http.RoundTripper = (*bearerTransport)(nil)
 
 // RoundTrip implements http.RoundTripper
 func (bt *bearerTransport) RoundTrip(in *http.Request) (*http.Response, error) {
-	sendRequest := func() (*http.Response, error) {
-		hdr, err := bt.bearer.Authorization()
-		if err != nil {
-			return nil, err
-		}
-
-		// http.Client handles redirects at a layer above the http.RoundTripper
-		// abstraction, so to avoid forwarding Authorization headers to places
-		// we are redirected, only set it when the authorization header matches
-		// the registry with which we are interacting.
-		// In case of redirect http.Client can use an empty Host, check URL too.
-		if in.Host == bt.registry.RegistryStr() || in.URL.Host == bt.registry.RegistryStr() {
-			in.Header.Set("Authorization", hdr)
-		}
-		in.Header.Set("User-Agent", transportName)
-		return bt.inner.RoundTrip(in)
-	}
-
-	res, err := sendRequest()
+	hdr, err := bt.bearer.Authorization()
 	if err != nil {
 		return nil, err
 	}
 
-	// Perform a token refresh() and retry the request in case the token has expired
-	if res.StatusCode == http.StatusUnauthorized {
-		if err = bt.refresh(); err != nil {
-			return nil, err
-		}
-		return sendRequest()
+	// http.Client handles redirects at a layer above the http.RoundTripper
+	// abstraction, so to avoid forwarding Authorization headers to places
+	// we are redirected, only set it when the authorization header matches
+	// the registry with which we are interacting.
+	if in.Host == bt.registry.RegistryStr() {
+		in.Header.Set("Authorization", hdr)
 	}
+	in.Header.Set("User-Agent", transportName)
 
-	return res, err
+	// TODO(mattmoor): On 401s perform a single refresh() and retry.
+	return bt.inner.RoundTrip(in)
 }
 
 func (bt *bearerTransport) refresh() error {

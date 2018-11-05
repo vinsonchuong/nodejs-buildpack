@@ -10,24 +10,25 @@ export BUILDPACK_DIR=`dirname $(readlink -f ${BASH_SOURCE%/*})`
 source "$BUILDPACK_DIR/scripts/install_go.sh"
 output_dir=$(mktemp -d -t supplyXXX)
 
-
 echo "-----> Running go build supply"
 GOROOT=$GoInstallDir/go GOPATH=$BUILDPACK_DIR $GoInstallDir/go/bin/go build
 
 
-# BUILD_DIR: /tmp/app mv -> /home/vcap/app/app/{package.json, etc.}
-# BUILD_DIR: /tmp/app mv -> /home/vcap/app/org.cloudfoundry.buildpacks.nodejs/
+# BUILD_DIR: /tmp/app mv -> /home/vcap/app/app/{package.json, etc.}?
+# BUILD_DIR: /tmp/app mv -> /home/vcap/app/org.cloudfoundry.buildpacks.nodejs/?
 # CACHE_DIR: /tmp/cache/final ?
 # DepDir: /tmp/contents262296241/deps/0 ------> /home/vcap/app/org.cloudfoundry.buildpacks.nodejs/
+    - What is this? Is it just an empty temp directory?
 
 # Pull in v3 lifecycle repo
+
 # Pull in nodejs-cnb and npm-cnb repo
 # Create buildplan.toml??
 # In appDir (/home/vcap/app??), call lifecycle/detector with buildpacksDir, launchDir, orderPath, groupPath, planPath
-      /lifecycle/detector -buildpacks /buildpacks (nodejs, npm)
-                          -order /buildpacks/order.toml
-                          -group ./group.toml
-                          -plan ./plan.toml
+      /lifecycle/detector -buildpacks /buildpacks (nodejs, npm) //Input
+                          -order /buildpacks/order.toml //Input
+                          -group ./group.toml //Path to where to output
+                          -plan ./plan.toml //Path to where to output
 
       /lifecycle/builder -buildpacks /buildpacks
                          -group ./group.toml
@@ -36,22 +37,3 @@ GOROOT=$GoInstallDir/go GOPATH=$BUILDPACK_DIR $GoInstallDir/go/bin/go build
 
 # mv /home/vcap/app/org.cloudfoundry.buildpacks.nodejs/* --> /home/vcap/deps/0/org.cloudfoundry.buildpacks.nodejs/*
 # In /bin/release, read launch.toml in order to echo start command
-
-# Clarifying questions:
-# - is working dir for /lifecycle/detector /home/vcap/app or /home/vcap/app/app?
-# - Do we move /tmp/app/* to /home/vcap/app/* or /home/vcap/app/app/* ?
-# - Do we create order.toml before the v3 lifecycle is invoked? And what does it look like? And how is it constructed?
-
-# order.toml - what does this look like?
-[[groups]]
-labels = ["nodejs"]
-buildpacks = [
-  { id = "io.buildpacks.nodejs", version = “latest”, optional = true },
-  { id = "io.buildpacks.npm", version = “latest” }
-]
-
-# group.toml - what does this look like?
-buildpacks = [
-  { id = "<buildpack ID>", version = "<buildpack version>" }
-]
-

@@ -44,8 +44,14 @@ var GetImageLoader = func() (ImageLoader, error) {
 	return cli, nil
 }
 
+// WriteOptions are used to expose optional information to guide or
+// control the image write.
+type WriteOptions struct {
+	// TODO(dlorenc): What kinds of knobs does the daemon expose?
+}
+
 // Write saves the image into the daemon as the given tag.
-func Write(tag name.Tag, img v1.Image) (string, error) {
+func Write(tag name.Tag, img v1.Image, wo WriteOptions) (string, error) {
 	cli, err := GetImageLoader()
 	if err != nil {
 		return "", err
@@ -53,7 +59,7 @@ func Write(tag name.Tag, img v1.Image) (string, error) {
 
 	pr, pw := io.Pipe()
 	go func() {
-		pw.CloseWithError(tarball.Write(tag, img, pw))
+		pw.CloseWithError(tarball.Write(tag, img, &tarball.WriteOptions{}, pw))
 	}()
 
 	// write the image in docker save format first, then load it

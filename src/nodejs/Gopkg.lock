@@ -2,6 +2,14 @@
 
 
 [[projects]]
+  digest = "1:e4b30804a381d7603b8a344009987c1ba351c26043501b23b8c7ce21f0b67474"
+  name = "github.com/BurntSushi/toml"
+  packages = ["."]
+  pruneopts = ""
+  revision = "3012a1dbe2e4bd1391d42b32f0577cb7bbc7f005"
+  version = "v0.3.1"
+
+[[projects]]
   digest = "1:b856d8248663c39265a764561c1a1a149783f6cc815feb54a1f3a591b91f6eca"
   name = "github.com/Masterminds/semver"
   packages = ["."]
@@ -10,12 +18,32 @@
   version = "v1.4.2"
 
 [[projects]]
+  digest = "1:c7937d6337f88193ad8aade88c92d7e72b3d5fc6e5002a9515dabca5802624cd"
+  name = "github.com/Microsoft/go-winio"
+  packages = ["."]
+  pruneopts = ""
+  revision = "97e4973ce50b2ff5f09635a57e2b88a037aae829"
+  version = "v0.4.11"
+
+[[projects]]
   digest = "1:79421244ba5848aae4b0a5c41e633a04e4894cb0b164a219dc8c15ec7facb7f1"
   name = "github.com/blang/semver"
   packages = ["."]
   pruneopts = ""
   revision = "2ee87856327ba09384cabd113bc6b5d174e9ec0f"
   version = "v3.5.1"
+
+[[projects]]
+  branch = "master"
+  digest = "1:927ffc542bf1fddfef445f3934518687c3c0461086775cd6844105cf4b973fff"
+  name = "github.com/buildpack/lifecycle"
+  packages = [
+    ".",
+    "cmd",
+    "img",
+  ]
+  pruneopts = ""
+  revision = "aec58da4a3fab27a69cee36166a268d8ff1291ee"
 
 [[projects]]
   branch = "master"
@@ -33,11 +61,76 @@
   revision = "fe1bbde44a2153ae92e42c74bbce4423bf14decd"
 
 [[projects]]
+  branch = "master"
+  digest = "1:a0937269866f68424e50a4d44e7dbaa0237891864c489ec2d44815786e810aa6"
+  name = "github.com/docker/distribution"
+  packages = [
+    ".",
+    "digestset",
+    "reference",
+  ]
+  pruneopts = ""
+  revision = "93e082742a009850ac46962150b2f652a822c5ff"
+
+[[projects]]
+  digest = "1:4da26b62f5ae4be71f79b0c8b7563599e951356af509c60125e63cb4246396ad"
+  name = "github.com/docker/docker"
+  packages = [
+    "api",
+    "api/types",
+    "api/types/blkiodev",
+    "api/types/container",
+    "api/types/events",
+    "api/types/filters",
+    "api/types/image",
+    "api/types/mount",
+    "api/types/network",
+    "api/types/registry",
+    "api/types/strslice",
+    "api/types/swarm",
+    "api/types/swarm/runtime",
+    "api/types/time",
+    "api/types/versions",
+    "api/types/volume",
+    "client",
+  ]
+  pruneopts = ""
+  revision = "71cd53e4a197b303c6ba086bd584ffd67a884281"
+
+[[projects]]
+  digest = "1:ebe593d8b65a2947b78b6e164a2dac1a230b977a700b694da3a398b03b7afb04"
+  name = "github.com/docker/go-connections"
+  packages = [
+    "nat",
+    "sockets",
+    "tlsconfig",
+  ]
+  pruneopts = ""
+  revision = "7395e3f8aa162843a74ed6d48e79627d9792ac55"
+  version = "v0.4.0"
+
+[[projects]]
+  digest = "1:582d54fcb7233da8dde1dfd2210a5b9675d0685f84246a8d317b07d680c18b1b"
+  name = "github.com/docker/go-units"
+  packages = ["."]
+  pruneopts = ""
+  revision = "47565b4f722fb6ceae66b95f853feed578a4a51c"
+  version = "v0.3.3"
+
+[[projects]]
   digest = "1:7ce300e943482aff885b3318c1c6a609827f43e3ba26a073380d5ba6143a0c48"
   name = "github.com/elazarl/goproxy"
   packages = ["."]
   pruneopts = ""
   revision = "aacba83f36a55ac31cbb71c06547a328c0cd1604"
+
+[[projects]]
+  digest = "1:6e73003ecd35f4487a5e88270d3ca0a81bc80dc88053ac7e4dcfec5fba30d918"
+  name = "github.com/gogo/protobuf"
+  packages = ["proto"]
+  pruneopts = ""
+  revision = "636bf0302bc95575d69441b25a2603156ffdddf1"
+  version = "v1.1.1"
 
 [[projects]]
   branch = "master"
@@ -46,6 +139,27 @@
   packages = ["gomock"]
   pruneopts = ""
   revision = "600781dde9cca80734169b9e969d9054ccc57937"
+
+[[projects]]
+  digest = "1:cc737371bed7bb2921366cc0efabfc3096d1709366caaa1cd70357fde3c86866"
+  name = "github.com/google/go-containerregistry"
+  packages = [
+    "pkg/authn",
+    "pkg/name",
+    "pkg/v1",
+    "pkg/v1/daemon",
+    "pkg/v1/empty",
+    "pkg/v1/mutate",
+    "pkg/v1/partial",
+    "pkg/v1/random",
+    "pkg/v1/remote",
+    "pkg/v1/remote/transport",
+    "pkg/v1/tarball",
+    "pkg/v1/types",
+    "pkg/v1/v1util",
+  ]
+  pruneopts = ""
+  revision = "74aef1a35cfa25a5a20c951199abd26356e7bead"
 
 [[projects]]
   branch = "master"
@@ -104,6 +218,33 @@
   revision = "7615b9433f86a8bdf29709bf288bc4fd0636a369"
 
 [[projects]]
+  digest = "1:5d9b668b0b4581a978f07e7d2e3314af18eb27b3fb5d19b70185b7c575723d11"
+  name = "github.com/opencontainers/go-digest"
+  packages = ["."]
+  pruneopts = ""
+  revision = "279bed98673dd5bef374d3b6e4b09e2af76183bf"
+  version = "v1.0.0-rc1"
+
+[[projects]]
+  digest = "1:f26c8670b11e29a49c8e45f7ec7f2d5bac62e8fd4e3c0ae1662baa4a697f984a"
+  name = "github.com/opencontainers/image-spec"
+  packages = [
+    "specs-go",
+    "specs-go/v1",
+  ]
+  pruneopts = ""
+  revision = "d60099175f88c47cd379c4738d158884749ed235"
+  version = "v1.0.1"
+
+[[projects]]
+  digest = "1:7365acd48986e205ccb8652cc746f09c8b7876030d53710ea6ef7d0bd0dcd7ca"
+  name = "github.com/pkg/errors"
+  packages = ["."]
+  pruneopts = ""
+  revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
+  version = "v0.8.0"
+
+[[projects]]
   digest = "1:3ddca2bd5496c6922a2a9e636530e178a43c2a534ea6634211acdc7d10222794"
   name = "github.com/tidwall/gjson"
   packages = ["."]
@@ -125,9 +266,12 @@
   name = "golang.org/x/net"
   packages = [
     "context",
+    "context/ctxhttp",
     "html",
     "html/atom",
     "html/charset",
+    "internal/socks",
+    "proxy",
   ]
   pruneopts = ""
   revision = "04a2e542c03f1d053ab3e4d6e5abcd4b66e2be8e"
@@ -136,7 +280,10 @@
   branch = "master"
   digest = "1:03a1b1f2bfb0a6b2291c4161032429b1e8a1f23cc68530ad64358f8b493ead5f"
   name = "golang.org/x/sys"
-  packages = ["unix"]
+  packages = [
+    "unix",
+    "windows",
+  ]
   pruneopts = ""
   revision = "8a28ead16f52c8aaeffbf79239b251dfdf6c4f96"
 
@@ -186,11 +333,13 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "github.com/buildpack/lifecycle",
     "github.com/cloudfoundry/libbuildpack",
     "github.com/cloudfoundry/libbuildpack/ansicleaner",
     "github.com/cloudfoundry/libbuildpack/bratshelper",
     "github.com/cloudfoundry/libbuildpack/checksum",
     "github.com/cloudfoundry/libbuildpack/cutlass",
+    "github.com/docker/distribution",
     "github.com/golang/mock/gomock",
     "github.com/google/subcommands",
     "github.com/onsi/ginkgo",

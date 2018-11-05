@@ -27,6 +27,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/ko/publish"
 	"github.com/google/go-containerregistry/pkg/ko/resolve"
 	"github.com/google/go-containerregistry/pkg/name"
+	"github.com/google/go-containerregistry/pkg/v1/daemon"
 )
 
 func gobuildOptions() ([]build.Option, error) {
@@ -87,23 +88,20 @@ func resolveFilesToWriter(fo *FilenameOptions, no *NameOptions, lo *LocalOptions
 func resolveFile(f string, no *NameOptions, lo *LocalOptions, opt ...build.Option) ([]byte, error) {
 	var pub publish.Interface
 	repoName := os.Getenv("KO_DOCKER_REPO")
-
-	var namer publish.Namer
-	if no.PreserveImportPaths {
-		namer = preserveImportPath
-	} else {
-		namer = packageWithMD5
-	}
-
 	if lo.Local || repoName == publish.LocalDomain {
-		pub = publish.NewDaemon(namer)
+		pub = publish.NewDaemon(daemon.WriteOptions{})
 	} else {
 		_, err := name.NewRepository(repoName, name.WeakValidation)
 		if err != nil {
 			return nil, fmt.Errorf("the environment variable KO_DOCKER_REPO must be set to a valid docker repository, got %v", err)
 		}
 
-		opts := []publish.Option{publish.WithAuthFromKeychain(authn.DefaultKeychain), publish.WithNamer(namer)}
+		opts := []publish.Option{publish.WithAuthFromKeychain(authn.DefaultKeychain)}
+		if no.PreserveImportPaths {
+			opts = append(opts, publish.WithNamer(preserveImportPath))
+		} else {
+			opts = append(opts, publish.WithNamer(packageWithMD5))
+		}
 
 		pub, err = publish.NewDefault(repoName, opts...)
 		if err != nil {

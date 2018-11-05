@@ -4,9 +4,9 @@ set -euo pipefail
 cd "$( dirname "${BASH_SOURCE[0]}" )/.."
 source .envrc
 
-if [ ! -f .bin/ginkgo ]; then
-  (cd src/*/vendor/github.com/onsi/ginkgo/ginkgo/ && go install)
+if [[ ! -f .bin/v3lifecycle/detector ]]; then
+  (cd src/*/vendor/github.com/buildpack/lifecycle/cmd/detector && go install)
 fi
-if [ ! -f .bin/buildpack-packager ]; then
-  (cd src/*/vendor/github.com/cloudfoundry/libbuildpack/packager/buildpack-packager && go install)
+if [[ ! -f .bin/v3lifecycle/builder ]]; then
+  (cd src/*/vendor/github.com/buildpack/lifecycle/cmd/builder && go install)
 fi

@@ -26,33 +26,39 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1"
 )
 
+// WriteOptions are used to expose optional information to guide or
+// control the image write.
+type WriteOptions struct {
+	// TODO(mattmoor): Whether to store things compressed?
+}
+
 // WriteToFile writes in the compressed format to a tarball, on disk.
 // This is just syntactic sugar wrapping tarball.Write with a new file.
-func WriteToFile(p string, tag name.Tag, img v1.Image) error {
+func WriteToFile(p string, tag name.Tag, img v1.Image, wo *WriteOptions) error {
 	w, err := os.Create(p)
 	if err != nil {
 		return err
 	}
 	defer w.Close()
 
-	return Write(tag, img, w)
+	return Write(tag, img, wo, w)
 }
 
 // MultiWriteToFile writes in the compressed format to a tarball, on disk.
 // This is just syntactic sugar wrapping tarball.MultiWrite with a new file.
-func MultiWriteToFile(p string, tagToImage map[name.Tag]v1.Image) error {
+func MultiWriteToFile(p string, tagToImage map[name.Tag]v1.Image, wo *WriteOptions) error {
 	w, err := os.Create(p)
 	if err != nil {
 		return err
 	}
 	defer w.Close()
 
-	return MultiWrite(tagToImage, w)
+	return MultiWrite(tagToImage, wo, w)
 }
 
 // Write is a wrapper to write a single image and tag to a tarball.
-func Write(tag name.Tag, img v1.Image, w io.Writer) error {
-	return MultiWrite(map[name.Tag]v1.Image{tag: img}, w)
+func Write(tag name.Tag, img v1.Image, wo *WriteOptions, w io.Writer) error {
+	return MultiWrite(map[name.Tag]v1.Image{tag: img}, wo, w)
 }
 
 // MultiWrite writes the contents of each image to the provided reader, in the compressed format.
@@ -60,7 +66,7 @@ func Write(tag name.Tag, img v1.Image, w io.Writer) error {
 // One manifest.json file at the top level containing information about several images.
 // One file for each layer, named after the layer's SHA.
 // One file for the config blob, named after its SHA.
-func MultiWrite(tagToImage map[name.Tag]v1.Image, w io.Writer) error {
+func MultiWrite(tagToImage map[name.Tag]v1.Image, wo *WriteOptions, w io.Writer) error {
 	tf := tar.NewWriter(w)
 	defer tf.Close()
 

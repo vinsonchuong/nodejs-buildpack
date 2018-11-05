@@ -47,10 +47,10 @@ func TestDaemon(t *testing.T) {
 		t.Fatalf("random.Image() = %v", err)
 	}
 
-	def := NewDaemon(md5Hash)
+	def := NewDaemon(daemon.WriteOptions{})
 	if d, err := def.Publish(img, importpath); err != nil {
 		t.Errorf("Publish() = %v", err)
-	} else if got, want := d.String(), "ko.local/"+md5Hash(importpath); !strings.HasPrefix(got, want) {
+	} else if got, want := d.String(), "ko.local/"+importpath; !strings.HasPrefix(got, want) {
 		t.Errorf("Publish() = %v, wanted prefix %v", got, want)
 	}
 }

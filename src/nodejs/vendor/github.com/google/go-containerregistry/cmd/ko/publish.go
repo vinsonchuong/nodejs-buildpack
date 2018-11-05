@@ -26,6 +26,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/ko/build"
 	"github.com/google/go-containerregistry/pkg/ko/publish"
 	"github.com/google/go-containerregistry/pkg/name"
+	"github.com/google/go-containerregistry/pkg/v1/daemon"
 )
 
 func qualifyLocalImport(importpath, gopathsrc, pwd string) (string, error) {
@@ -72,21 +73,18 @@ func publishImages(importpaths []string, no *NameOptions, lo *LocalOptions) {
 		}
 		var pub publish.Interface
 		repoName := os.Getenv("KO_DOCKER_REPO")
-
-		var namer publish.Namer
-		if no.PreserveImportPaths {
-			namer = preserveImportPath
-		} else {
-			namer = packageWithMD5
-		}
-
 		if lo.Local || repoName == publish.LocalDomain {
-			pub = publish.NewDaemon(namer)
+			pub = publish.NewDaemon(daemon.WriteOptions{})
 		} else {
 			if _, err := name.NewRepository(repoName, name.WeakValidation); err != nil {
 				log.Fatalf("the environment variable KO_DOCKER_REPO must be set to a valid docker repository, got %v", err)
 			}
-			opts := []publish.Option{publish.WithAuthFromKeychain(authn.DefaultKeychain), publish.WithNamer(namer)}
+			opts := []publish.Option{publish.WithAuthFromKeychain(authn.DefaultKeychain)}
+			if no.PreserveImportPaths {
+				opts = append(opts, publish.WithNamer(preserveImportPath))
+			} else {
+				opts = append(opts, publish.WithNamer(packageWithMD5))
+			}
 			pub, err = publish.NewDefault(repoName, opts...)
 			if err != nil {
 				log.Fatalf("error setting up default image publisher: %v", err)
