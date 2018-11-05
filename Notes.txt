@@ -58,23 +58,24 @@ buildpacks = [
   { id = "<buildpack ID>", version = "<buildpack version>" }
 ]
 
-
-
 # Pull in v3 lifecycle repo
 # Pull in nodejs-cnb and npm-cnb repo
 # Create buildplan.toml??
 # In appDir (/home/vcap/app??), call lifecycle/detector with buildpacksDir, launchDir, orderPath, groupPath, planPath
-      /lifecycle/detector -buildpacks /buildpacks (nodejs, npm) //Input
-                          -order /buildpacks/order.toml //Input
-                          -group ./group.toml //Path to where to output
-                          -plan ./plan.toml //Path to where to output
+      /lifecycle/detector -buildpacks ./fixtures/buildpacks //Input
+                          -order ./fixtures/buildpacks/order.toml //Input
+                          -group ./fixtures/workspace/group.toml //Path to where to output
+                          -plan ./fixtures/workspace/plan.toml //Path to where to output
 
-      /lifecycle/builder -buildpacks /buildpacks
-                         -group ./group.toml
-                         -plan ./plan.tom
+      /lifecycle/builder -buildpacks ./fixtures/buildpacks
+                         -group ./fixtures/workspace/group.toml
+                         -plan ./fixtures/plan.toml
                          output: /home/vcap/app/org.cloudfoundry.buildpacks.nodejs/launch.toml
+echo "sleeping"
+sleep 3000
 
 # mv /home/vcap/app/org.cloudfoundry.buildpacks.nodejs/* --> /home/vcap/deps/0/org.cloudfoundry.buildpacks.nodejs/*
+
 # In /bin/release, read launch.toml in order to echo start command
 
 # Clarifying questions:
@@ -84,15 +85,14 @@ buildpacks = [
 # - Do we need to build or copy into place the v2 lifecycle copies deps from? Or can we build/copy directly into the destination?
 # - What does our order.toml initially look like?
 
-# order.toml - what does this look like?
-[[groups]]
-labels = ["nodejs"]
-buildpacks = [
-  { id = "io.buildpacks.nodejs", version = “latest”, optional = true },
-  { id = "io.buildpacks.npm", version = “latest” }
-]
+# Currently iterating with:
 
-# group.toml - what does this look like?
-buildpacks = [
-  { id = "<buildpack ID>", version = "<buildpack version>" }
-]
+Mount nodejs-buildpack directory to
+            container                           (This is md5 of "nodejs-buildpack")  Mount fixture cnb buildpacks
+                  |                              |                                  |
+                  V                              V                                  V
+`docker run -v $(pwd):/tmp/buildpacks/3bec7f3d485eee8707d275dbf41de4d5 -v $(pwd)/fixtures/buildpacks:/buildpacks -it packs/cflinuxfs2:latest bash`
+
+
+In Container:
+# PATH=$PATH:/tmp/go1.9.1/go/ CF_STACK=cflinuxfs2 /lifecycle/builder -buildpackOrder nodejs-buildpack -skipDetect
