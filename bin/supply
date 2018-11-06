@@ -6,11 +6,50 @@ CACHE_DIR=$2
 DEPS_DIR=$3
 DEPS_IDX=$4
 
+echo "BUILD_DIR: $BUILD_DIR"
+echo "CACHE_DIR: $CACHE_DIR"
+echo "DEPS_DIR: $DEPS_DIR"
+
 export BUILDPACK_DIR=`dirname $(readlink -f ${BASH_SOURCE%/*})`
 source "$BUILDPACK_DIR/scripts/install_go.sh"
+source "$BUILDPACK_DIR/scripts/install_v3_deps.sh"
 output_dir=$(mktemp -d -t supplyXXX)
 
 echo "-----> Running go build supply"
-GOROOT=$GoInstallDir/go GOPATH=$BUILDPACK_DIR $GoInstallDir/go/bin/go build -o $output_dir/supply nodejs/supply/cli
+#GOROOT=$GoInstallDir/go GOPATH=$BUILDPACK_DIR $GoInstallDir/go/bin/go build
 
-$output_dir/supply "$BUILD_DIR" "$CACHE_DIR" "$DEPS_DIR" "$DEPS_IDX"
+
+# BUILD_DIR: /tmp/app mv -> /home/vcap/app/app/{package.json, etc.}?
+# BUILD_DIR: /tmp/app mv -> /home/vcap/app/org.cloudfoundry.buildpacks.nodejs/?
+# CACHE_DIR: /tmp/cache/final ?
+# DepDir: /tmp/contents262296241/deps/0 ------> /home/vcap/app/org.cloudfoundry.buildpacks.nodejs/
+#    - What is this? Is it just an empty temp directory?
+
+# Pull in v3 lifecycle repo
+
+# Pull in nodejs-cnb and npm-cnb repo
+# clone v3 npm-cnb and node-cnb
+# Create buildplan.toml??
+# In appDir (/home/vcap/app??), call lifecycle/detector with buildpacksDir, launchDir, orderPath, groupPath, planPath
+echo "WORKING DIR: $(pwd)"
+
+# When https://github.com/buildpack/lifecycle/pull/35 is merged we should vendor it in and (or just use this branch for now)
+${BUILDPACK_DIR}/.bin/detector -buildpacks /buildpacks \
+                  -order /buildpacks/order.toml \
+                  -group ./group.toml \
+                  -plan ./plan.toml
+
+echo "After detector"
+echo ${BUILDPACK_DIR}
+
+${BUILDPACK_DIR}/.bin/builder -buildpacks /buildpacks \
+                 -group ./group.toml \
+                 -plan ./plan.toml
+                 #output: /home/vcap/app/org.cloudfoundry.buildpacks.nodejs/launch.toml
+
+echo "after builder"
+# to "Pause" a staging buildpack
+# echo "sleeping"
+# sleep 3000
+# mv /home/vcap/app/org.cloudfoundry.buildpacks.nodejs/* --> /home/vcap/deps/0/org.cloudfoundry.buildpacks.nodejs/*
+# In /bin/release, read launch.toml in order to echo start command

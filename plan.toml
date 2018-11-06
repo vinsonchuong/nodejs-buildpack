@@ -1,0 +1,12 @@
+[node]
+  provider = ""
+  version = "~10"
+  [node.metadata]
+    build = true
+    launch = true
+
+[npm]
+  provider = ""
+  version = ""
+  [npm.metadata]
+    launch = true

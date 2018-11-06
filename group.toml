@@ -1,0 +1,7 @@
+[[buildpacks]]
+  id = "org.cloudfoundry.buildpacks.nodejs"
+  version = "0.0.1"
+
+[[buildpacks]]
+  id = "org.cloudfoundry.buildpacks.npm"
+  version = "0.0.1"

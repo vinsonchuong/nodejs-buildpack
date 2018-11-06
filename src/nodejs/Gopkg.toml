@@ -1,7 +1,7 @@
 # Refer to https://github.com/golang/dep/blob/master/docs/Gopkg.toml.md
 # for detailed Gopkg.toml documentation.
 
-required = ["github.com/google/subcommands"]
+required = ["github.com/google/subcommands", "github.com/buildpack/lifecycle", "github.com/docker/distribution"]
 
 [[constraint]]
   name = "github.com/cloudfoundry/libbuildpack"
@@ -38,3 +38,15 @@ required = ["github.com/google/subcommands"]
 [[constraint]]
   branch = "master"
   name = "github.com/cloudfoundry/libjavabuildpack"
+
+[[override]]
+  name = "github.com/docker/distribution"
+  branch = "master"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/docker/docker"
+
+[[override]]
+  name = "github.com/google/go-containerregistry"
+  revision = "74aef1a35cfa25a5a20c951199abd26356e7bead"
