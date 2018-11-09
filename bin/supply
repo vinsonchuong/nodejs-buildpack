@@ -1,16 +1,32 @@
 #!/bin/bash
 set -euo pipefail
 
+export PACK_STACK_ID="org.cloudfoundry.stacks.$CF_STACK"
+
 BUILD_DIR=$1
 CACHE_DIR=$2
 DEPS_DIR=$3
 DEPS_IDX=$4
+LAUNCH_DIR="$BUILD_DIR/.."
+FAKE_LAUNCH_DIR="/home/vcap/deps/$DEPS_IDX"
 
-export BUILDPACK_DIR=`dirname $(readlink -f ${BASH_SOURCE%/*})`
-source "$BUILDPACK_DIR/scripts/install_go.sh"
-output_dir=$(mktemp -d -t supplyXXX)
+BP_DIR=`dirname $(readlink -f ${BASH_SOURCE%/*})`
 
-echo "-----> Running go build supply"
-GOROOT=$GoInstallDir/go GOPATH=$BUILDPACK_DIR $GoInstallDir/go/bin/go build -o $output_dir/supply nodejs/supply/cli
+mkdir -p "$FAKE_LAUNCH_DIR"
 
-$output_dir/supply "$BUILD_DIR" "$CACHE_DIR" "$DEPS_DIR" "$DEPS_IDX"
+ln -s "$BUILD_DIR" "$FAKE_LAUNCH_DIR/app"
+
+${BP_DIR}/bin/v3-builder \
+-buildpacks "$BP_DIR/cnbs" \
+-cache $CACHE_DIR \
+-group "$LAUNCH_DIR/group.toml" \
+-launch "$FAKE_LAUNCH_DIR" \
+-plan "$LAUNCH_DIR/plan.toml" \
+-platform "$LAUNCH_DIR"
+
+# TODO : iterate over the buildpacks listed in the order.toml file instead of hand-coding these
+mv "$FAKE_LAUNCH_DIR/org.cloudfoundry.buildpacks.nodejs" "$DEPS_DIR/$DEPS_IDX"
+mv "$FAKE_LAUNCH_DIR/org.cloudfoundry.buildpacks.npm" "$DEPS_DIR/$DEPS_IDX"
+mv "$FAKE_LAUNCH_DIR/config/metadata.toml" "$BUILD_DIR"
+
+rm -rf "$FAKE_LAUNCH_DIR"
