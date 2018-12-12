@@ -77,4 +77,25 @@ var _ = Describe("V3 Wrapped CF NodeJS Buildpack", func() {
 			})
 		})
 	})
+
+	FContext("v3 supplies v2b", func() {
+		BeforeEach(func() {
+			if ok, err := cutlass.ApiGreaterThan("2.65.1"); err != nil || !ok {
+				Skip("API version does not have multi-buildpack support")
+			}
+
+			app = cutlass.New(filepath.Join(bpDir, "fixtures", "go_calls_nodejs"))
+			app.Buildpacks = []string{
+				"nodejs_buildpack",
+				"go_buildpack",
+			}
+		})
+
+		It("finds the supplied dependency in the runtime container", func() {
+			Expect(app.Push()).To(Succeed())
+
+			Expect(app.Stdout.String()).To(ContainSubstring("Nodejs Buildpack version"))
+			Expect(app.GetBody("/")).To(MatchRegexp("INFO hello world"))
+		})
+	})
 })
