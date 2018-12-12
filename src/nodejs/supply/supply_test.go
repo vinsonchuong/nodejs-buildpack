@@ -252,6 +252,29 @@ var _ = Describe("Supply", func() {
 		})
 	})
 
+	Describe("CalculateSpecificityHelper", func() {
+
+		var shorterArray, longerArray []string
+
+		Context("when the arrays don't conflict", func() {
+			BeforeEach(func() {
+				shorterArray = []string{"11.0.1", "11.0.2", "11.0.3", "11.0.4"}
+				longerArray = []string{"11.0.1", "11.0.2", "11.0.3", "11.0.4", "11.0.5", "11.0.6"}
+			})
+
+		})
+
+		Context("when the arrays conflict", func() {
+			BeforeEach(func() {
+				shorterArray = []string{"11.0.1", "11.0.2", "11.0.3", "11.0.4"}
+				longerArray = []string{"11.0.2", "11.0.3", "11.0.4", "11.0.5", "11.0.6"}
+			})
+			It("")
+
+		})
+
+	})
+
 	Describe("WarnNodeEngine", func() {
 		Context("node version not specified", func() {
 			It("warns that node version hasn't been set", func() {

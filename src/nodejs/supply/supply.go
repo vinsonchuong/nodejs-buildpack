@@ -58,6 +58,8 @@ type Supplier struct {
 	Logfile            *os.File
 	Command            Command
 	NodeVersion        string
+	PackageJSONNodeVersion string
+	NvmrcNodeVersion   string
 	YarnVersion        string
 	NPMVersion         string
 	PreBuild           string
@@ -79,7 +81,16 @@ func Run(s *Supplier) error {
 			return err
 		}
 
-		s.WarnNodeEngine()
+		if err := s.LoadNvmrc(); err != nil {
+			s.Log.Error("Unable to load .nvmrc: %s", err.Error())
+			return err
+		}
+
+		//s.WarnNodeEngine()
+		if err := s.ChooseNodeVersion(); err != nil {
+			return err
+		}
+
 
 		if err := s.InstallNode("/tmp/node"); err != nil {
 			s.Log.Error("Unable to install node: %s", err.Error())
@@ -461,18 +472,108 @@ func (s *Supplier) LoadPackageJSON() error {
 		return err
 	}
 
-	s.NodeVersion = p.Engines.Node
+	s.PackageJSONNodeVersion = p.Engines.Node
 	s.NPMVersion = p.Engines.NPM
 	s.YarnVersion = p.Engines.Yarn
 
 	return nil
 }
 
+func (s *Supplier) LoadNvmrc() error {
+	nvmrcExists, err := libbuildpack.FileExists(filepath.Join(s.Stager.BuildDir(), ".nvmrc"))
+	if err != nil {
+		return err
+	}
+
+	if nvmrcExists {
+		nvmrcVersion, err := ioutil.ReadFile(filepath.Join(s.Stager.BuildDir(), ".nvmrc"))
+		if err != nil {
+			return err
+		}
+
+		s.NvmrcNodeVersion = string(nvmrcVersion)
+	}
+
+	return nil
+}
+
+func (s *Supplier) calculateSpecificity(nvmrcMatches, packageJSONMatches []string) (string, error)  {
+	if len(packageJSONMatches) > len(nvmrcMatches){
+		return CalculateSpecificityHelper(nvmrcMatches, packageJSONMatches)
+	}
+	return CalculateSpecificityHelper(packageJSONMatches, nvmrcMatches)
+}
+
+func CalculateSpecificityHelper(shorterArray, longerArray []string) (string, error) {
+	versionSet := make(map[string]bool)
+
+	for _, v := range shorterArray {
+		versionSet[v] = true
+	}
+
+	for _, v := range longerArray {
+		versionSet[v] = true
+	}
+
+	if len(versionSet) > len(longerArray) {
+		return "", fmt.Errorf("conflicting node versions in .nvmrc and in package.json")
+	}
+	return shorterArray[len(shorterArray)-1], nil
+}
+
+func (s * Supplier) ChooseNodeVersion() error {
+	var (
+		dep            libbuildpack.Dependency
+		packageJSONVersions []string
+		nvmrcVersions []string
+		err            error
+	)
+
+	versions := s.Manifest.AllDependencyVersions("node")
+	
+	dep, err = s.Manifest.DefaultVersion("node")
+	if err != nil {
+		return err
+	}
+	s.NodeVersion = dep.Version
+
+	if s.PackageJSONNodeVersion != "" {
+		packageJSONVersions, err = libbuildpack.FindMatchingVersions(s.PackageJSONNodeVersion, versions)
+		if err != nil {
+			return err
+		}
+	}
+
+	if s.NvmrcNodeVersion != "" {
+		nvmrcVersions, err = libbuildpack.FindMatchingVersions(s.NvmrcNodeVersion, versions)
+		if err != nil {
+			return err
+		}
+	}
+
+	s.NodeVersion, err = s.calculateSpecificity(packageJSONVersions, nvmrcVersions)
+	if err != nil {
+		return err
+	}
+
+	if s.PackageJSONNodeVersion == "" && s.NvmrcNodeVersion == "" {
+		dep, err = s.Manifest.DefaultVersion("node")
+		if err != nil {
+			return err
+		}
+		s.NodeVersion = dep.Version
+		return nil
+	}
+
+	return nil
+}
+
+
 func (s *Supplier) WarnNodeEngine() {
 	docsLink := "http://docs.cloudfoundry.org/buildpacks/node/node-tips.html"
 
-	if s.NodeVersion == "" {
-		s.Log.Warning("Node version not specified in package.json. See: %s", docsLink)
+	if s.NodeVersion == "" && s.NvmrcNodeVersion == "" {
+		s.Log.Warning("Node version not specified in package.json or .nvmrc. See: %s", docsLink)
 	}
 	if s.NodeVersion == "*" {
 		s.Log.Warning("Dangerous semver range (*) in engines.node. See: %s", docsLink)
@@ -488,22 +589,8 @@ func (s *Supplier) InstallNode(tempDir string) error {
 
 	nodeInstallDir := filepath.Join(s.Stager.DepDir(), "node")
 
-	if s.NodeVersion != "" {
-		versions := s.Manifest.AllDependencyVersions("node")
-		ver, err := libbuildpack.FindMatchingVersion(s.NodeVersion, versions)
-		if err != nil {
-			return err
-		}
-		dep.Name = "node"
-		dep.Version = ver
-	} else {
-		var err error
-
-		dep, err = s.Manifest.DefaultVersion("node")
-		if err != nil {
-			return err
-		}
-	}
+	dep.Name = "node"
+	dep.Version = s.NodeVersion
 
 	if err := s.Installer.InstallDependency(dep, tempDir); err != nil {
 		return err
