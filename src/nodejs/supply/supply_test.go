@@ -3,11 +3,13 @@ package supply_test
 import (
 	"bytes"
 	"fmt"
+	"github.com/cloudfoundry/nodejs-buildpack/src/nodejs/supply"
 	"io"
 	"io/ioutil"
-	"github.com/cloudfoundry/nodejs-buildpack/src/nodejs/supply"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
 
 	"github.com/cloudfoundry/libbuildpack"
 	"github.com/cloudfoundry/libbuildpack/ansicleaner"
@@ -160,7 +162,7 @@ var _ = Describe("Supply", func() {
 					err = supplier.LoadPackageJSON()
 					Expect(err).To(BeNil())
 
-					Expect(supplier.NodeVersion).To(Equal("node-y"))
+					Expect(supplier.PackageJSONNodeVersion).To(Equal("node-y"))
 					Expect(supplier.YarnVersion).To(Equal("*"))
 					Expect(supplier.NPMVersion).To(Equal("npm-x"))
 				})
@@ -252,40 +254,43 @@ var _ = Describe("Supply", func() {
 		})
 	})
 
-	Describe("CalculateSpecificityHelper", func() {
-
-		var shorterArray, longerArray []string
-
-		Context("when the arrays don't conflict", func() {
-			BeforeEach(func() {
-				shorterArray = []string{"11.0.1", "11.0.2", "11.0.3", "11.0.4"}
-				longerArray = []string{"11.0.1", "11.0.2", "11.0.3", "11.0.4", "11.0.5", "11.0.6"}
-			})
-
-		})
-
-		Context("when the arrays conflict", func() {
-			BeforeEach(func() {
-				shorterArray = []string{"11.0.1", "11.0.2", "11.0.3", "11.0.4"}
-				longerArray = []string{"11.0.2", "11.0.3", "11.0.4", "11.0.5", "11.0.6"}
-			})
-			It("")
-
-		})
-
-	})
-
 	Describe("WarnNodeEngine", func() {
 		Context("node version not specified", func() {
 			It("warns that node version hasn't been set", func() {
+				supplier.NvmrcNodeVersion = ""
+				supplier.PackageJSONNodeVersion = ""
 				supplier.WarnNodeEngine()
-				Expect(buffer.String()).To(ContainSubstring("**WARNING** Node version not specified in package.json. See: http://docs.cloudfoundry.org/buildpacks/node/node-tips.html"))
+				Expect(buffer.String()).To(ContainSubstring("**WARNING** Node version not specified in package.json or .nvmrc. See: http://docs.cloudfoundry.org/buildpacks/node/node-tips.html"))
+			})
+		})
+
+		Context("node version is set to node in nvmrc", func() {
+			It("warns that latest node version is being used", func() {
+				supplier.NvmrcNodeVersion = "node"
+				supplier.WarnNodeEngine()
+				Expect(buffer.String()).To(ContainSubstring("**WARNING** .nvmrc specified latest node version, this will be selected from versions available in manifest.yml"))
+			})
+		})
+
+		Context("node version is set to lts in nvmrc", func() {
+			It("warns that latest lts version is being used", func() {
+				supplier.NvmrcNodeVersion = "lts/*"
+				supplier.WarnNodeEngine()
+				Expect(buffer.String()).To(ContainSubstring("**WARNING** .nvmrc specified an lts version, this will be selected from versions available in manifest.yml"))
+			})
+		})
+
+		Context("node version is set in nvmrc", func() {
+			It("warns that the node version set using .nvmrc", func() {
+				supplier.NvmrcNodeVersion = "node"
+				supplier.WarnNodeEngine()
+				Expect(buffer.String()).To(ContainSubstring("**WARNING** Attempting to use the node version specified in your .nvmrc See: http://docs.cloudfoundry.org/buildpacks/node/node-tips.html"))
 			})
 		})
 
 		Context("node version is *", func() {
 			It("warns that the node semver is dangerous", func() {
-				supplier.NodeVersion = "*"
+				supplier.PackageJSONNodeVersion = "*"
 				supplier.WarnNodeEngine()
 				Expect(buffer.String()).To(ContainSubstring("**WARNING** Dangerous semver range (*) in engines.node. See: http://docs.cloudfoundry.org/buildpacks/node/node-tips.html"))
 			})
@@ -293,7 +298,7 @@ var _ = Describe("Supply", func() {
 
 		Context("node version is >x", func() {
 			It("warns that the node semver is dangerous", func() {
-				supplier.NodeVersion = ">5"
+				supplier.PackageJSONNodeVersion = ">5"
 				supplier.WarnNodeEngine()
 				Expect(buffer.String()).To(ContainSubstring("**WARNING** Dangerous semver range (>) in engines.node. See: http://docs.cloudfoundry.org/buildpacks/node/node-tips.html"))
 			})
@@ -301,9 +306,107 @@ var _ = Describe("Supply", func() {
 
 		Context("node version is 'safe' semver", func() {
 			It("does not log anything", func() {
-				supplier.NodeVersion = "~>6"
+				supplier.PackageJSONNodeVersion = "~>6"
 				supplier.WarnNodeEngine()
 				Expect(buffer.String()).To(Equal(""))
+			})
+		})
+
+	})
+
+	Describe("When nvmrc is present", func() {
+		var (
+			dep      libbuildpack.Dependency
+			versions []string
+		)
+		BeforeEach(func() {
+			dep = libbuildpack.Dependency{Name: "node", Version: "6.10.2"}
+			mockManifest.EXPECT().DefaultVersion("node").Return(dep, nil).AnyTimes()
+			versions = []string{
+				"4.0.0", "4.0.1", "4.2.3",
+				"6.0.0", "6.0.2", "6.2.3",
+				"8.0.0", "8.0.3", "8.2.3",
+				"10.0.0", "10.0.4", "10.2.3",
+				"11.0.0", "11.0.5", "11.2.3",
+			}
+			mockManifest.EXPECT().AllDependencyVersions("node").Return(versions).AnyTimes()
+		})
+		Context("nvmrc is present and engines field in package.json is present", func() {
+			It("selects the version in nvmrc", func() {
+				supplier.PackageJSONNodeVersion = "10.0.0"
+				supplier.NvmrcNodeVersion = "10.2.3"
+				Expect(supplier.ChooseNodeVersion()).To(Succeed())
+				Expect(supplier.NodeVersion).To(Equal("10.2.3"))
+			})
+		})
+		Context("nvmrc is present and engines field in package.json is missing", func() {
+			It("selects the version in nvmrc", func() {
+				supplier.PackageJSONNodeVersion = ""
+				supplier.NvmrcNodeVersion = "10.2.3"
+				Expect(supplier.ChooseNodeVersion()).To(Succeed())
+				Expect(supplier.NodeVersion).To(Equal("10.2.3"))
+			})
+		})
+		Context("nvmrc is missing and engines field in package.json is present", func() {
+			It("selects the version in nvmrc", func() {
+				supplier.PackageJSONNodeVersion = "11.2.3"
+				supplier.NvmrcNodeVersion = ""
+				Expect(supplier.ChooseNodeVersion()).To(Succeed())
+				Expect(supplier.NodeVersion).To(Equal("11.2.3"))
+			})
+		})
+		Context("nvmrc has the special keyword node", func() {
+			It("selects the latest node version in our manifest", func() {
+				supplier.NvmrcNodeVersion = "node"
+				Expect(supplier.ChooseNodeVersion()).To(Succeed())
+				Expect(supplier.NodeVersion).To(Equal("11.2.3"))
+			})
+		})
+
+		Context("nvmrc has the special keyword lts/*", func() {
+			It("selects the latest node version in our manifest", func() {
+				supplier.NvmrcNodeVersion = "lts/*"
+				Expect(supplier.ChooseNodeVersion()).To(Succeed())
+				Expect(supplier.NodeVersion).To(Equal("10.2.3"))
+			})
+		})
+
+		Context("nvmrc has the special keyword lts/ + version-name", func() {
+			It("selects the latest node version in our manifest", func() {
+				for key, value := range supply.LTS {
+					supplier.NvmrcNodeVersion = "lts/" + key
+					Expect(supplier.ChooseNodeVersion()).To(Succeed())
+					Expect(supplier.NodeVersion).To(Equal(strconv.Itoa(value) + ".2.3"))
+				}
+			})
+		})
+	})
+
+	Describe(".nvmrc validation", func() {
+		validVersions := []string{"11.4.0", "10", "node", "lts/*", "v10", "  10.4.0  ", "lts/argon", "lts/CarBON"}
+
+		AfterEach(func() {
+			Expect(os.Remove(filepath.Join(buildDir, ".nvmrc"))).To(Succeed())
+		})
+		Context("given a valid .nvmrc", func() {
+			It("validate should pass", func() {
+				for _, version := range validVersions {
+					Expect(ioutil.WriteFile(filepath.Join(buildDir, ".nvmrc"), []byte(version), 0777)).To(Succeed())
+					Expect(supplier.LoadNvmrc()).To(Succeed())
+					// check if version string contains parsed version (whitespace will be trimmed)
+					Expect(strings.ToLower(version)).To(ContainSubstring(supplier.NvmrcNodeVersion))
+				}
+			})
+		})
+
+		invalidVersions := []string{"11.4.x", "invalid", "~1.1.2", ">11.0", "< 11.4.2", "^1.2.3", "11.*.*", "10.1.x", "10.1.X", "lts/invalidname"}
+
+		Context("given an invalid .nvmrc", func() {
+			It("validate should be fail", func() {
+				for _, version := range invalidVersions {
+					Expect(ioutil.WriteFile(filepath.Join(buildDir, ".nvmrc"), []byte(version), 0777)).To(Succeed())
+					Expect(supplier.LoadNvmrc()).ToNot(Succeed())
+				}
 			})
 		})
 	})
@@ -326,7 +429,11 @@ var _ = Describe("Supply", func() {
 				mockManifest.EXPECT().AllDependencyVersions("node").Return(versions)
 			})
 
-			It("installs the correct version from the manifest", func() {
+			//TODO install node has been separated into 2 components
+			// 1) determine the node version with ChooseNodeVersion()
+			// 2) actually install
+			// these tests need to change to test only one of these functions I think
+			FIt("installs the correct version from the manifest", func() {
 				dep := libbuildpack.Dependency{Name: "node", Version: "4.8.3"}
 				mockInstaller.EXPECT().InstallDependency(dep, nodeTmpDir).Do(installNode).Return(nil)
 

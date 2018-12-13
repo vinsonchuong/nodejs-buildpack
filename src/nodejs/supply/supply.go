@@ -4,10 +4,12 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"github.com/Masterminds/semver"
 	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/cloudfoundry/nodejs-buildpack/src/nodejs/package_json"
@@ -51,26 +53,33 @@ type Stager interface {
 }
 
 type Supplier struct {
-	Stager             Stager
-	Manifest           Manifest
-	Installer          Installer
-	Log                *libbuildpack.Logger
-	Logfile            *os.File
-	Command            Command
-	NodeVersion        string
+	Stager                 Stager
+	Manifest               Manifest
+	Installer              Installer
+	Log                    *libbuildpack.Logger
+	Logfile                *os.File
+	Command                Command
+	NodeVersion            string
 	PackageJSONNodeVersion string
-	NvmrcNodeVersion   string
-	YarnVersion        string
-	NPMVersion         string
-	PreBuild           string
-	StartScript        string
-	HasDevDependencies bool
-	PostBuild          string
-	UseYarn            bool
-	UsesYarnWorkspaces bool
-	IsVendored         bool
-	Yarn               Yarn
-	NPM                NPM
+	NvmrcNodeVersion       string
+	YarnVersion            string
+	NPMVersion             string
+	PreBuild               string
+	StartScript            string
+	HasDevDependencies     bool
+	PostBuild              string
+	UseYarn                bool
+	UsesYarnWorkspaces     bool
+	IsVendored             bool
+	Yarn                   Yarn
+	NPM                    NPM
+}
+
+var LTS = map[string]int{
+	"argon":   4,
+	"boron":   6,
+	"carbon":  8,
+	"dubnium": 10,
 }
 
 func Run(s *Supplier) error {
@@ -86,11 +95,11 @@ func Run(s *Supplier) error {
 			return err
 		}
 
-		//s.WarnNodeEngine()
+		s.WarnNodeEngine()
+
 		if err := s.ChooseNodeVersion(); err != nil {
 			return err
 		}
-
 
 		if err := s.InstallNode("/tmp/node"); err != nil {
 			s.Log.Error("Unable to install node: %s", err.Error())
@@ -490,47 +499,25 @@ func (s *Supplier) LoadNvmrc() error {
 		if err != nil {
 			return err
 		}
+		trimmedNvmrcVersion := strings.ToLower(strings.TrimSpace(string(nvmrcVersion)))
+		if err = validateNvmrc(trimmedNvmrcVersion); err != nil {
+			return err
+		}
 
-		s.NvmrcNodeVersion = string(nvmrcVersion)
+		s.NvmrcNodeVersion = trimmedNvmrcVersion
 	}
 
 	return nil
 }
 
-func (s *Supplier) calculateSpecificity(nvmrcMatches, packageJSONMatches []string) (string, error)  {
-	if len(packageJSONMatches) > len(nvmrcMatches){
-		return CalculateSpecificityHelper(nvmrcMatches, packageJSONMatches)
-	}
-	return CalculateSpecificityHelper(packageJSONMatches, nvmrcMatches)
-}
-
-func CalculateSpecificityHelper(shorterArray, longerArray []string) (string, error) {
-	versionSet := make(map[string]bool)
-
-	for _, v := range shorterArray {
-		versionSet[v] = true
-	}
-
-	for _, v := range longerArray {
-		versionSet[v] = true
-	}
-
-	if len(versionSet) > len(longerArray) {
-		return "", fmt.Errorf("conflicting node versions in .nvmrc and in package.json")
-	}
-	return shorterArray[len(shorterArray)-1], nil
-}
-
-func (s * Supplier) ChooseNodeVersion() error {
+func (s *Supplier) ChooseNodeVersion() error {
 	var (
-		dep            libbuildpack.Dependency
-		packageJSONVersions []string
-		nvmrcVersions []string
-		err            error
+		dep libbuildpack.Dependency
+		err error
 	)
 
 	versions := s.Manifest.AllDependencyVersions("node")
-	
+
 	dep, err = s.Manifest.DefaultVersion("node")
 	if err != nil {
 		return err
@@ -538,50 +525,63 @@ func (s * Supplier) ChooseNodeVersion() error {
 	s.NodeVersion = dep.Version
 
 	if s.PackageJSONNodeVersion != "" {
-		packageJSONVersions, err = libbuildpack.FindMatchingVersions(s.PackageJSONNodeVersion, versions)
+		s.NodeVersion, err = libbuildpack.FindMatchingVersion(s.PackageJSONNodeVersion, versions)
 		if err != nil {
 			return err
 		}
 	}
 
 	if s.NvmrcNodeVersion != "" {
-		nvmrcVersions, err = libbuildpack.FindMatchingVersions(s.NvmrcNodeVersion, versions)
-		if err != nil {
+		if s.NvmrcNodeVersion == "node" {
+			s.NvmrcNodeVersion = "*" // matches all versions in the manifest. Selects newest by default
+		}
+
+		if s.NvmrcNodeVersion == "lts/*" {
+			maxNumber := 0
+			for _, versionNumber := range LTS {
+				if versionNumber > maxNumber {
+					maxNumber = versionNumber
+				}
+			}
+
+			s.NvmrcNodeVersion = strconv.Itoa(maxNumber) + ".*.*"
+		} else if strings.HasPrefix(s.NvmrcNodeVersion, "lts") {
+			ltsName := strings.Split(s.NvmrcNodeVersion, "/")[1]
+			versionNumber := LTS[ltsName]
+			s.NvmrcNodeVersion = strconv.Itoa(versionNumber) + ".*.*"
+		}
+
+		if s.NodeVersion, err = libbuildpack.FindMatchingVersion(s.NvmrcNodeVersion, versions); err != nil {
 			return err
 		}
 	}
-
-	s.NodeVersion, err = s.calculateSpecificity(packageJSONVersions, nvmrcVersions)
-	if err != nil {
-		return err
-	}
-
-	if s.PackageJSONNodeVersion == "" && s.NvmrcNodeVersion == "" {
-		dep, err = s.Manifest.DefaultVersion("node")
-		if err != nil {
-			return err
-		}
-		s.NodeVersion = dep.Version
-		return nil
-	}
-
 	return nil
 }
-
 
 func (s *Supplier) WarnNodeEngine() {
 	docsLink := "http://docs.cloudfoundry.org/buildpacks/node/node-tips.html"
 
-	if s.NodeVersion == "" && s.NvmrcNodeVersion == "" {
+	if s.NvmrcNodeVersion != "" {
+		s.Log.Warning("Attempting to use the node version specified in your .nvmrc See: %s", docsLink)
+	}
+
+	if s.PackageJSONNodeVersion == "" && s.NvmrcNodeVersion == "" {
 		s.Log.Warning("Node version not specified in package.json or .nvmrc. See: %s", docsLink)
 	}
-	if s.NodeVersion == "*" {
+	if s.PackageJSONNodeVersion == "*" {
 		s.Log.Warning("Dangerous semver range (*) in engines.node. See: %s", docsLink)
 	}
-	if strings.HasPrefix(s.NodeVersion, ">") {
+	if s.NvmrcNodeVersion == "node" {
+		s.Log.Warning(".nvmrc specified latest node version, this will be selected from versions available in manifest.yml")
+	}
+
+	if strings.HasPrefix(s.NvmrcNodeVersion, "lts") {
+		s.Log.Warning(".nvmrc specified an lts version, this will be selected from versions available in manifest.yml")
+	}
+
+	if strings.HasPrefix(s.PackageJSONNodeVersion, ">") {
 		s.Log.Warning("Dangerous semver range (>) in engines.node. See: %s", docsLink)
 	}
-	return
 }
 
 func (s *Supplier) InstallNode(tempDir string) error {
@@ -755,6 +755,26 @@ func (s *Supplier) OverrideCacheFromApp() error {
 	if err := copyAll(s.Stager.BuildDir(), s.Stager.CacheDir(), pkgMgrCacheDirs); err != nil {
 		return err
 	}
+
+	return nil
+}
+
+func validateNvmrc(content string) error {
+	if content == "lts/*" || content == "node" {
+		return nil
+	}
+
+	for key, _ := range LTS {
+		if strings.EqualFold(content, "lts/"+key) {
+			return nil
+		}
+	}
+
+	if _, err := semver.NewVersion(content); err != nil {
+		return fmt.Errorf("invalid version %s specified in .nvmrc", err)
+	}
+
+	fmt.Println("No error for input: ", content)
 
 	return nil
 }
