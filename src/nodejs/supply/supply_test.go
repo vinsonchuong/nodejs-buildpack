@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"testing"
 
 	"github.com/cloudfoundry/libbuildpack"
 	"github.com/cloudfoundry/libbuildpack/ansicleaner"
@@ -18,6 +19,11 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 )
+
+func TestGinkgo(t *testing.T) {
+	RegisterFailHandler(Fail)
+	RunSpecs(t, "Some Test Suite Name")
+}
 
 //go:generate mockgen -source=supply.go --destination=mocks_test.go --package=supply_test
 
@@ -314,6 +320,8 @@ var _ = Describe("Supply", func() {
 
 	})
 
+	// TODO: add case for more specific PackageJsonVersion
+	// TODO: add case for conflicting PackagesJsonVersion and NvmrcVersion
 	Describe("When nvmrc is present", func() {
 		var (
 			dep      libbuildpack.Dependency
@@ -325,7 +333,7 @@ var _ = Describe("Supply", func() {
 			versions = []string{
 				"4.0.0", "4.0.1", "4.2.3",
 				"6.0.0", "6.0.2", "6.2.3",
-				"8.0.0", "8.0.3", "8.2.3",
+				"8.0.1", "8.0.3", "8.2.3",
 				"10.0.0", "10.0.4", "10.2.3",
 				"11.0.0", "11.0.5", "11.2.3",
 			}
@@ -380,6 +388,49 @@ var _ = Describe("Supply", func() {
 				}
 			})
 		})
+
+		Context("nvmrc has a more specific version than engines field in package.json", func() {
+			It("selects the latest node version in our manifest", func() {
+				ltsVersionName := "carbon"
+				ltsVersionNumber := strconv.Itoa(supply.LTS[ltsVersionName])
+				supplier.NvmrcNodeVersion = "lts/" + ltsVersionName
+				supplier.PackageJSONNodeVersion = "> 6.0.0"
+				Expect(supplier.ChooseNodeVersion()).To(Succeed())
+				Expect(supplier.NodeVersion).To(Equal(ltsVersionNumber + ".2.3"))
+
+			})
+		})
+		Context("package.json engines field is more specific version than nvmrc", func() {
+			It("selects the latest node version in our manifest", func() {
+				ltsVersionName := "carbon"
+				ltsVersionNumber := strconv.Itoa(supply.LTS[ltsVersionName])
+				supplier.NvmrcNodeVersion = "lts/" + ltsVersionName
+				supplier.PackageJSONNodeVersion = "8.0.*"
+				Expect(supplier.ChooseNodeVersion()).To(Succeed())
+				Expect(supplier.NodeVersion).To(Equal(ltsVersionNumber + ".0.3"))
+
+			})
+		})
+
+		Context("package.json engines field is more specific version than nvmrc", func() {
+			It("selects the latest node version in our manifest", func() {
+				supplier.NvmrcNodeVersion = "node"
+				supplier.PackageJSONNodeVersion = "8.0.*"
+				Expect(supplier.ChooseNodeVersion()).To(Succeed())
+				Expect(supplier.NodeVersion).To(Equal("8.0.3"))
+			})
+		})
+
+		Context("package.json engines field and nvmrc conflict", func() {
+			It("selects the latest node version in our manifest", func() {
+				ltsVersionName := "carbon"
+				supplier.NvmrcNodeVersion = "lts/" + ltsVersionName
+				supplier.PackageJSONNodeVersion = ">8.0.3"
+				err := supplier.ChooseNodeVersion()
+				Expect(err).ToNot(HaveOccurred())
+				Expect(supplier.NodeVersion).To(Equal("8.2.3"))
+			})
+		})
 	})
 
 	Describe(".nvmrc validation", func() {
@@ -423,21 +474,24 @@ var _ = Describe("Supply", func() {
 			Expect(os.RemoveAll(nodeTmpDir)).To(Succeed())
 		})
 
+		// TODO: need to be re-written...
 		Context("node version use semver", func() {
 			BeforeEach(func() {
 				versions := []string{"6.10.2", "6.11.1", "4.8.2", "4.8.3", "7.0.0"}
 				mockManifest.EXPECT().AllDependencyVersions("node").Return(versions)
+				mockManifest.EXPECT().DefaultVersion("node").Return(libbuildpack.Dependency{"node", "0.0.0"}, nil)
 			})
 
-			//TODO install node has been separated into 2 components
 			// 1) determine the node version with ChooseNodeVersion()
 			// 2) actually install
 			// these tests need to change to test only one of these functions I think
-			FIt("installs the correct version from the manifest", func() {
+			It("installs the correct version from the manifest", func() {
 				dep := libbuildpack.Dependency{Name: "node", Version: "4.8.3"}
 				mockInstaller.EXPECT().InstallDependency(dep, nodeTmpDir).Do(installNode).Return(nil)
 
-				supplier.NodeVersion = "~>4"
+				supplier.PackageJSONNodeVersion = "~>4"
+				err = supplier.ChooseNodeVersion()
+				Expect(err).To(BeNil())
 				err = supplier.InstallNode(nodeTmpDir)
 				Expect(err).To(BeNil())
 			})
@@ -446,7 +500,9 @@ var _ = Describe("Supply", func() {
 				dep := libbuildpack.Dependency{Name: "node", Version: "6.11.1"}
 				mockInstaller.EXPECT().InstallDependency(dep, nodeTmpDir).Do(installNode).Return(nil)
 
-				supplier.NodeVersion = ">=6.11.1 <7.0.0"
+				supplier.PackageJSONNodeVersion = ">=6.11.1 <7.0.0"
+				err = supplier.ChooseNodeVersion()
+				Expect(err).To(BeNil())
 				err = supplier.InstallNode(nodeTmpDir)
 				Expect(err).To(BeNil())
 			})
@@ -455,7 +511,9 @@ var _ = Describe("Supply", func() {
 				dep := libbuildpack.Dependency{Name: "node", Version: "6.11.1"}
 				mockInstaller.EXPECT().InstallDependency(dep, nodeTmpDir).Do(installNode).Return(nil)
 
-				supplier.NodeVersion = ">=6.11.1, <7.0"
+				supplier.PackageJSONNodeVersion = ">=6.11.1, <7.0"
+				err = supplier.ChooseNodeVersion()
+				Expect(err).To(BeNil())
 				err = supplier.InstallNode(nodeTmpDir)
 				Expect(err).To(BeNil())
 			})
@@ -463,8 +521,9 @@ var _ = Describe("Supply", func() {
 			It("creates a symlink in <depDir>/bin", func() {
 				dep := libbuildpack.Dependency{Name: "node", Version: "6.10.2"}
 				mockInstaller.EXPECT().InstallDependency(dep, nodeTmpDir).Do(installNode).Return(nil)
-
-				supplier.NodeVersion = "6.10.*"
+				supplier.PackageJSONNodeVersion = "6.10.*"
+				err = supplier.ChooseNodeVersion()
+				Expect(err).To(BeNil())
 				err = supplier.InstallNode(nodeTmpDir)
 				Expect(err).To(BeNil())
 
@@ -484,9 +543,13 @@ var _ = Describe("Supply", func() {
 			It("installs the default version from the manifest", func() {
 				dep := libbuildpack.Dependency{Name: "node", Version: "6.10.2"}
 				mockManifest.EXPECT().DefaultVersion("node").Return(dep, nil)
+				mockManifest.EXPECT().AllDependencyVersions(gomock.Any())
 				mockInstaller.EXPECT().InstallDependency(dep, nodeTmpDir).Do(installNode).Return(nil)
 
 				supplier.NodeVersion = ""
+
+				err = supplier.ChooseNodeVersion()
+				Expect(err).To(BeNil())
 
 				err = supplier.InstallNode(nodeTmpDir)
 				Expect(err).To(BeNil())
@@ -1315,6 +1378,25 @@ fi
 export PATH=$PATH:"$HOME/bin":$NODE_PATH/.bin
 `
 			Expect(string(contents)).To(ContainSubstring(nodePathString))
+		})
+	})
+
+	Describe("CalculateSpecificity", func() {
+		Context("Given two arrays where one is a subset of the other", func() {
+			It("should return the max version in the contained array", func() {
+				packageJSONMatches := []string{"10.0.0", "10.1.0", "11.0.0", "12.0.0"}
+				nvmrcMatches := []string{"9.0.0", "10.0.0", "10.1.0", "11.0.0", "12.0.0", "12.0.1", "13.0.0"}
+				Expect(supplier.CalculateSpecificity(nvmrcMatches, packageJSONMatches)).To(Equal("12.0.0"))
+				Expect(supplier.CalculateSpecificity(packageJSONMatches, nvmrcMatches)).To(Equal("12.0.0"))
+			})
+			It("should fail if each array does not contain the other", func() {
+				nvmrcMatches := []string{"10.0.0", "10.1.0", "11.0.0"}
+				packageJSONMatches := []string{"10.1.0", "11.0.0", "12.0.0", "12.0.1", "13.0.0"}
+				_, err := supplier.CalculateSpecificity(nvmrcMatches, packageJSONMatches)
+				Expect(err).To(HaveOccurred())
+				_, err = supplier.CalculateSpecificity(packageJSONMatches, nvmrcMatches)
+				Expect(err).To(HaveOccurred())
+			})
 		})
 	})
 })

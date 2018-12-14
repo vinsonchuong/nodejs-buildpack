@@ -510,6 +510,67 @@ func (s *Supplier) LoadNvmrc() error {
 	return nil
 }
 
+// need to deal cases like 10.0 which is the nvmrc equivalent of floating versions
+func (s *Supplier) CalculateSpecificity(nvmrcMatches, packageJSONMatches []string) (string, error) {
+	if len(packageJSONMatches) > len(nvmrcMatches) {
+		return calculateSpecificityHelper(nvmrcMatches, packageJSONMatches)
+	}
+	return calculateSpecificityHelper(packageJSONMatches, nvmrcMatches)
+}
+
+func calculateSpecificityHelper(shorterArray, longerArray []string) (string, error) {
+	versionSet := make(map[string]bool)
+	for _, v := range shorterArray {
+		versionSet[v] = true
+	}
+	for _, v := range longerArray {
+		versionSet[v] = true
+	}
+	if len(versionSet) > len(longerArray) {
+		return "", fmt.Errorf("conflicting node versions in .nvmrc and in package.json")
+	}
+	return shorterArray[len(shorterArray)-1], nil
+}
+
+func filterSemverList(semvers []string, filter func(string) bool) []string {
+	filterList := []string{}
+	for _, semver := range semvers {
+		if filter(semver) {
+			filterList = append(filterList, semver)
+		}
+	}
+	return filterList
+}
+
+// return error if not subset (conflicting versions)
+// return false if not a subset but one is a subset of the other
+// return true if actual subset
+
+func (s *Supplier) isMoreSpecificSemver(nvmrcVersions, packageJsonVersions []string) bool {
+	// return an error if neither is a subset of the other
+	if _, err := s.CalculateSpecificity(nvmrcVersions, packageJsonVersions); err != nil {
+		s.Log.Warning("package-lock and nvmrc versions conflict. Using nvmrc version.")
+		return false
+	}
+	return len(nvmrcVersions) >= len(packageJsonVersions)
+
+}
+
+func combineToSet(arrays ...[]interface{}) map[interface{}]bool {
+	set := make(map[interface{}]bool)
+	for _, array := range arrays {
+		for _, elem := range array {
+			set[elem] = true
+		}
+	}
+	return set
+}
+
+func isSubset(subset, fullSet []interface{}) bool {
+	set := combineToSet(subset, fullSet)
+	return len(set) == len(fullSet)
+}
+
 func (s *Supplier) ChooseNodeVersion() error {
 	var (
 		dep libbuildpack.Dependency
@@ -530,28 +591,51 @@ func (s *Supplier) ChooseNodeVersion() error {
 			return err
 		}
 	}
-
 	if s.NvmrcNodeVersion != "" {
+		nvmrcLookup := s.NvmrcNodeVersion
+
 		if s.NvmrcNodeVersion == "node" {
-			s.NvmrcNodeVersion = "*" // matches all versions in the manifest. Selects newest by default
+			// when package json is more specific
+			nvmrcLookup = "*" // matches all versions in the manifest. Selects newest by default
 		}
 
+		// lts/* assumes that 10.x.x is in our manifest, this might not be a valid assumption
+		// need to calculate this from the manifest
 		if s.NvmrcNodeVersion == "lts/*" {
-			maxNumber := 0
-			for _, versionNumber := range LTS {
-				if versionNumber > maxNumber {
-					maxNumber = versionNumber
-				}
-			}
 
-			s.NvmrcNodeVersion = strconv.Itoa(maxNumber) + ".*.*"
+			evenSemversOnly := func(semverString string) bool {
+				version, err := semver.NewVersion(semverString)
+				if err != nil || version.Major()%2 == 1 {
+					return false
+				}
+				return true
+			}
+			ltsNodeVersions := filterSemverList(versions, evenSemversOnly)
+
+			nvmrcLookup = ltsNodeVersions[len(ltsNodeVersions)-1]
 		} else if strings.HasPrefix(s.NvmrcNodeVersion, "lts") {
 			ltsName := strings.Split(s.NvmrcNodeVersion, "/")[1]
 			versionNumber := LTS[ltsName]
-			s.NvmrcNodeVersion = strconv.Itoa(versionNumber) + ".*.*"
+			nvmrcLookup = strconv.Itoa(versionNumber) + ".*.*"
 		}
 
-		if s.NodeVersion, err = libbuildpack.FindMatchingVersion(s.NvmrcNodeVersion, versions); err != nil {
+		if s.PackageJSONNodeVersion != "" {
+			nvmRcVersions, err := libbuildpack.FindMatchingVersions(nvmrcLookup, versions)
+			if err != nil {
+				return err
+			}
+			packageJSONVersions, err := libbuildpack.FindMatchingVersions(s.PackageJSONNodeVersion, versions)
+			if err != nil {
+				return err
+			}
+			isMoreSpecific := s.isMoreSpecificSemver(nvmRcVersions, packageJSONVersions)
+
+			if isMoreSpecific {
+				nvmrcLookup = s.PackageJSONNodeVersion
+			}
+		}
+
+		if s.NodeVersion, err = libbuildpack.FindMatchingVersion(nvmrcLookup, versions); err != nil {
 			return err
 		}
 	}
@@ -765,7 +849,7 @@ func validateNvmrc(content string) error {
 	}
 
 	for key, _ := range LTS {
-		if strings.EqualFold(content, "lts/"+key) {
+		if content == strings.ToLower("lts/"+key) {
 			return nil
 		}
 	}
@@ -773,8 +857,6 @@ func validateNvmrc(content string) error {
 	if _, err := semver.NewVersion(content); err != nil {
 		return fmt.Errorf("invalid version %s specified in .nvmrc", err)
 	}
-
-	fmt.Println("No error for input: ", content)
 
 	return nil
 }
