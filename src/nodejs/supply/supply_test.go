@@ -259,14 +259,9 @@ var _ = Describe("Supply", func() {
 		})
 	})
 
-	//TODO: Load, Trimming up nvmrc
-	Describe("Load Nvmrc contents", func() {
-		Context("when nvmrc is not present", func() {
-
-		})
-
-		Context("regular old numbers", func() {
-			It("should read and trim contents", func() {
+	Describe("Load .nvmrc contents", func() {
+		Context("digits", func() {
+			It("will trim and transform nvmrc to appropriate semver for Masterminds semver library", func() {
 				nvmrcFile := filepath.Join(buildDir, ".nvmrc")
 				defer os.Remove(nvmrcFile)
 
@@ -287,7 +282,7 @@ var _ = Describe("Supply", func() {
 		})
 
 		Context("lts/something", func() {
-			It("should read and trim lts versions", func() {
+			It("will read and trim lts versions to appropriate semver for Masterminds semver library", func() {
 				nvmrcFile := filepath.Join(buildDir, ".nvmrc")
 				defer os.Remove(nvmrcFile)
 
@@ -320,6 +315,13 @@ var _ = Describe("Supply", func() {
 
 	Describe("WarnNodeEngine", func() {
 		Context("node version not specified", func() {
+			It("warns that nvmrc version will be ignored in favor of package.json", func() {
+				supplier.NvmrcNodeVersion = "lts/*"
+				supplier.PackageJSONNodeVersion = "*"
+				supplier.WarnNodeEngine()
+				Expect(buffer.String()).To(ContainSubstring("**WARNING** Node version in .nvmrc ignored in favor of 'engines' field in package.json"))
+			})
+
 			It("warns that node version hasn't been set", func() {
 				supplier.NvmrcNodeVersion = ""
 				supplier.PackageJSONNodeVersion = ""
@@ -333,6 +335,8 @@ var _ = Describe("Supply", func() {
 				supplier.NvmrcNodeVersion = "node"
 				supplier.WarnNodeEngine()
 				Expect(buffer.String()).To(ContainSubstring("**WARNING** .nvmrc specified latest node version, this will be selected from versions available in manifest.yml"))
+				Expect(buffer.String()).To(ContainSubstring("**WARNING** Using the node version specified in your .nvmrc See: http://docs.cloudfoundry.org/buildpacks/node/node-tips.html"))
+
 			})
 		})
 
@@ -341,14 +345,6 @@ var _ = Describe("Supply", func() {
 				supplier.NvmrcNodeVersion = "lts/*"
 				supplier.WarnNodeEngine()
 				Expect(buffer.String()).To(ContainSubstring("**WARNING** .nvmrc specified an lts version, this will be selected from versions available in manifest.yml"))
-			})
-		})
-
-		Context("node version is set in nvmrc", func() {
-			It("warns that the node version set using .nvmrc", func() {
-				supplier.NvmrcNodeVersion = "node"
-				supplier.WarnNodeEngine()
-				Expect(buffer.String()).To(ContainSubstring("**WARNING** Attempting to use the node version specified in your .nvmrc See: http://docs.cloudfoundry.org/buildpacks/node/node-tips.html"))
 			})
 		})
 
@@ -378,8 +374,6 @@ var _ = Describe("Supply", func() {
 
 	})
 
-	// TODO: add case for more specific PackageJsonVersion
-	// TODO: add case for conflicting PackagesJsonVersion and NvmrcVersion
 	Describe("When nvmrc is present", func() {
 		var (
 			dep      libbuildpack.Dependency
@@ -400,11 +394,11 @@ var _ = Describe("Supply", func() {
 		})
 
 		Context("nvmrc is present and engines field in package.json is present", func() {
-			It("selects the version in nvmrc", func() {
+			It("selects the version from the engines field in packages.json", func() {
 				supplier.PackageJSONNodeVersion = "10.0.0"
 				supplier.NvmrcNodeVersion = "10.2.3"
 				Expect(supplier.ChooseNodeVersion()).To(Succeed())
-				Expect(supplier.NodeVersion).To(Equal("10.2.3"))
+				Expect(supplier.NodeVersion).To(Equal("10.0.0"))
 			})
 		})
 
@@ -418,7 +412,7 @@ var _ = Describe("Supply", func() {
 		})
 
 		Context("nvmrc is missing and engines field in package.json is present", func() {
-			It("selects the version in nvmrc", func() {
+			It("selects version from engines in package.json", func() {
 				supplier.PackageJSONNodeVersion = "11.2.3"
 				supplier.NvmrcNodeVersion = ""
 				Expect(supplier.ChooseNodeVersion()).To(Succeed())
@@ -426,45 +420,36 @@ var _ = Describe("Supply", func() {
 			})
 		})
 
-		Context("nvmrc has a more specific version than engines field in package.json", func() {
-			It("selects the latest node version in our manifest", func() {
-				supplier.NvmrcNodeVersion = "8.0.*"
-				supplier.PackageJSONNodeVersion = "> 6.0.0"
-				Expect(supplier.ChooseNodeVersion()).To(Succeed())
-				Expect(supplier.NodeVersion).To(Equal("8.0.3"))
-
-			})
-		})
-		Context("package.json engines field is more specific version than nvmrc", func() {
-			It("selects the latest node version in our manifest", func() {
-				supplier.NvmrcNodeVersion = "8.*.*"
-				supplier.PackageJSONNodeVersion = "8.0.*"
-				Expect(supplier.ChooseNodeVersion()).To(Succeed())
-				Expect(supplier.NodeVersion).To(Equal("8.0.3"))
-
-			})
-		})
-
-		Context("package.json engines field and nvmrc conflict", func() {
-			It("selects the latest node version in our manifest", func() {
+		Context("package.json engines field and nvmrc are both specified", func() {
+			It("selects version from package.json engines field", func() {
 				supplier.NvmrcNodeVersion = "8.*.*"
 				supplier.PackageJSONNodeVersion = ">8.0.3"
 				err := supplier.ChooseNodeVersion()
 				Expect(err).ToNot(HaveOccurred())
-				Expect(supplier.NodeVersion).To(Equal("8.2.3"))
+				Expect(supplier.NodeVersion).To(Equal("11.2.3"))
 			})
 		})
 	})
 
 	Describe(".nvmrc validation", func() {
-		invalidVersions := []string{"11.4.x", "invalid", "~1.1.2", ">11.0", "< 11.4.2", "^1.2.3", "11.*.*", "10.1.x", "10.1.X", "lts/invalidname"}
 
 		AfterEach(func() {
 			Expect(os.Remove(filepath.Join(buildDir, ".nvmrc"))).To(Succeed())
 		})
 
+		Context("given valid .nvmrc", func() {
+			It("validate should succeed", func() {
+				validVersions := []string{"11.4", "node", "lts/*", "lts/carbon", "10", "10.1.1"}
+				for _, version := range validVersions {
+					Expect(ioutil.WriteFile(filepath.Join(buildDir, ".nvmrc"), []byte(version), 0777)).To(Succeed())
+					Expect(supplier.LoadNvmrc()).To(Succeed())
+				}
+			})
+		})
+
 		Context("given an invalid .nvmrc", func() {
 			It("validate should be fail", func() {
+				invalidVersions := []string{"11.4.x", "invalid", "~1.1.2", ">11.0", "< 11.4.2", "^1.2.3", "11.*.*", "10.1.x", "10.1.X", "lts/invalidname"}
 				for _, version := range invalidVersions {
 					Expect(ioutil.WriteFile(filepath.Join(buildDir, ".nvmrc"), []byte(version), 0777)).To(Succeed())
 					Expect(supplier.LoadNvmrc()).ToNot(Succeed())

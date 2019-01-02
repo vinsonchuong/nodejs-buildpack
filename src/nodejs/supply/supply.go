@@ -553,16 +553,12 @@ func (s *Supplier) ChooseNodeVersion() error {
 
 	versions := s.Manifest.AllDependencyVersions("node")
 
-	if s.NvmrcNodeVersion != "" && s.PackageJSONNodeVersion == "" {
-		if selectedVersion, err = libbuildpack.FindMatchingVersion(s.NvmrcNodeVersion, versions); err != nil {
-			return err
-		}
-	} else if s.NvmrcNodeVersion == "" && s.PackageJSONNodeVersion != "" {
+	if s.PackageJSONNodeVersion != "" {
 		if selectedVersion, err = libbuildpack.FindMatchingVersion(s.PackageJSONNodeVersion, versions); err != nil {
 			return err
 		}
-	} else if s.NvmrcNodeVersion != "" && s.PackageJSONNodeVersion != "" {
-		if selectedVersion, err = s.getMostSpecificVersion(versions); err != nil {
+	} else if s.NvmrcNodeVersion != "" {
+		if selectedVersion, err = libbuildpack.FindMatchingVersion(s.NvmrcNodeVersion, versions); err != nil {
 			return err
 		}
 	} else {
@@ -578,45 +574,15 @@ func (s *Supplier) ChooseNodeVersion() error {
 	return nil
 }
 
-func (s *Supplier) getMostSpecificVersion(versions []string) (string, error) {
-	nvmrcVersions, err := libbuildpack.FindMatchingVersions(s.NvmrcNodeVersion, versions)
-	if err != nil {
-		return "", err
-	}
-
-	packageJSONVersions, err := libbuildpack.FindMatchingVersions(s.PackageJSONNodeVersion, versions)
-	if err != nil {
-		return "", err
-	}
-
-	set := make(map[string]interface{})
-
-	for _, version := range nvmrcVersions {
-		set[version] = nil
-	}
-
-	for _, version := range packageJSONVersions {
-		set[version] = nil
-	}
-
-	//if len(set) > len(nvmrcVersions) && len(set) > len(packageJSONVersions) {
-	//	return "", fmt.Errorf(".nvmrc and package.json have conflicting node version contsraints, neither is a subset of the other")
-	//}
-
-	if len(packageJSONVersions) < len(nvmrcVersions) {
-		return packageJSONVersions[len(packageJSONVersions)-1], nil
-	}
-
-	return nvmrcVersions[len(nvmrcVersions)-1], nil
-}
-
 func (s *Supplier) WarnNodeEngine() {
 	docsLink := "http://docs.cloudfoundry.org/buildpacks/node/node-tips.html"
 
-	if s.NvmrcNodeVersion != "" {
-		s.Log.Warning("Attempting to use the node version specified in your .nvmrc See: %s", docsLink)
+	if s.NvmrcNodeVersion != "" && s.PackageJSONNodeVersion == "" {
+		s.Log.Warning("Using the node version specified in your .nvmrc See: %s", docsLink)
 	}
-
+	if s.PackageJSONNodeVersion != "" && s.NvmrcNodeVersion != "" {
+		s.Log.Warning("Node version in .nvmrc ignored in favor of 'engines' field in package.json")
+	}
 	if s.PackageJSONNodeVersion == "" && s.NvmrcNodeVersion == "" {
 		s.Log.Warning("Node version not specified in package.json or .nvmrc. See: %s", docsLink)
 	}
