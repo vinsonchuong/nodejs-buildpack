@@ -1,6 +1,8 @@
 package integration_test
 
 import (
+	"github.com/cloudfoundry/libbuildpack/shims"
+	_ "github.com/cloudfoundry/libbuildpack/shims/cmd/supply"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -8,13 +10,16 @@ import (
 	"time"
 
 	"github.com/cloudfoundry/libbuildpack/cutlass"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("V3 Wrapped CF NodeJS Buildpack", func() {
 	var app *cutlass.App
+	BeforeEach(func(){
+		shims.NewCNBInstaller(nil)
+		shims.NewCNBInstaller(nil)
+	})
 	AfterEach(func() {
 		if app != nil {
 			app.Destroy()
@@ -23,7 +28,7 @@ var _ = Describe("V3 Wrapped CF NodeJS Buildpack", func() {
 	})
 
 	Describe("nodeJS versions", func() {
-		Context("when specifying a range for the nodeJS version in the package.json", func() {
+		FContext("when specifying a range for the nodeJS version in the package.json", func() {
 			BeforeEach(func() {
 				app = cutlass.New(filepath.Join(bpDir, "fixtures", "simple_app"))
 			})
@@ -38,7 +43,7 @@ var _ = Describe("V3 Wrapped CF NodeJS Buildpack", func() {
 			})
 		})
 
-		XContext("Unbuilt buildpack (eg github)", func() {
+		Context("Unbuilt buildpack (eg github)", func() {
 			var bpName string
 
 			BeforeEach(func() {
@@ -79,6 +84,33 @@ var _ = Describe("V3 Wrapped CF NodeJS Buildpack", func() {
 		})
 	})
 
+	Context("Multiple Unbuilt buildpacks (eg github)", func() {
+		var bpName string
+
+		BeforeEach(func() {
+
+
+			app.Buildpacks = []string{
+				"https://github.com/cloudfoundry/dotnet-core-buildpack#master",
+				"https://github.com/cloudfoundry/nodejs-buildpack#master",
+			}
+			app.Disk = "2G"
+			app.Memory = "2G"
+		})
+
+		AfterEach(func() {
+			Expect(cutlass.DeleteBuildpack(bpName)).To(Succeed())
+		})
+
+		It("runs", func() {
+			Expect(app.Push()).To(Succeed())
+
+			Expect(app.Stdout.String()).To(ContainSubstring("Supplying Dotnet Core"))
+			Expect(app.GetBody("/")).To(MatchRegexp(`dotnet: \d+\.\d+\.\d+`))
+			Expect(app.GetBody("/text")).To(MatchRegexp(`Text: \d+\.\d+\.\d+`))
+		})
+	})
+
 	Context("multiple buildpacks", func() {
 		BeforeEach(func() {
 			if ok, err := cutlass.ApiGreaterThan("2.65.1"); err != nil || !ok {
@@ -94,6 +126,18 @@ var _ = Describe("V3 Wrapped CF NodeJS Buildpack", func() {
 			app.Buildpacks = []string{
 				"https://github.com/cloudfoundry/dotnet-core-buildpack#master",
 				"nodejs_buildpack",
+			}
+			Expect(app.Push()).To(Succeed())
+
+			Expect(app.Stdout.String()).To(ContainSubstring("Supplying Dotnet Core"))
+			Expect(app.GetBody("/")).To(MatchRegexp(`dotnet: \d+\.\d+\.\d+`))
+			Expect(app.GetBody("/text")).To(MatchRegexp(`Text: \d+\.\d+\.\d+`))
+		})
+
+		It("makes the supplied v2 dependency available at v3 launch and build", func() {
+			app.Buildpacks = []string{
+				"https://github.com/cloudfoundry/dotnet-core-buildpack#master",
+				"https://github.com/cloudfoundry/nodejs-buildpack#v3",
 			}
 			Expect(app.Push()).To(Succeed())
 

@@ -16,6 +16,9 @@ include_files:
 - bin/supply
 - order.toml
 - manifest.yml
+- vendor
+- go.mod
+- go.sum
 dependencies:
 - name: org.cloudfoundry.buildpacks.nodejs
   version: 0.0.2
