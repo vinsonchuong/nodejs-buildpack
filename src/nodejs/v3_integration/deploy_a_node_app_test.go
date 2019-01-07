@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/cloudfoundry/libbuildpack/cutlass"
-
+	_ "github.com/cloudfoundry/libbuildpack/shims/cmd/supply"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -38,7 +38,7 @@ var _ = Describe("V3 Wrapped CF NodeJS Buildpack", func() {
 			})
 		})
 
-		XContext("Unbuilt buildpack (eg github)", func() {
+		Context("Unbuilt buildpack (eg github)", func() {
 			var bpName string
 
 			BeforeEach(func() {
@@ -111,6 +111,21 @@ var _ = Describe("V3 Wrapped CF NodeJS Buildpack", func() {
 			Expect(app.Push()).NotTo(Succeed())
 			Expect(app.Stdout.String()).To(ContainSubstring("Cannot follow a v3 buildpack by a v2 buildpack."))
 			Expect(app.Stdout.String()).NotTo(ContainSubstring("ERR bash: npm: command not found"))
+		})
+
+		// This test won't run the latest local code as it runs against a branch
+		Context("when using github urls", func() {
+			It("makes the supplied v2 dependency available at v3 launch and build", func() {
+				app.Buildpacks = []string{
+					"https://github.com/cloudfoundry/dotnet-core-buildpack#master",
+					"https://github.com/cloudfoundry/nodejs-buildpack#v3",
+				}
+				Expect(app.Push()).To(Succeed())
+
+				Expect(app.Stdout.String()).To(ContainSubstring("Supplying Dotnet Core"))
+				Expect(app.GetBody("/")).To(MatchRegexp(`dotnet: \d+\.\d+\.\d+`))
+				Expect(app.GetBody("/text")).To(MatchRegexp(`Text: \d+\.\d+\.\d+`))
+			})
 		})
 	})
 })

@@ -8,7 +8,7 @@ source "$BUILDPACK_DIR/scripts/install_go.sh" &>/dev/null
 output_dir=$(mktemp -d -t releaseXXX)
 
 pushd $BUILDPACK_DIR &>/dev/null
-    $GoInstallDir/go/bin/go build -ldflags="-s -w" -o $output_dir/release github.com/cloudfoundry/libbuildpack/shims/cmd/release
+    $GoInstallDir/go/bin/go build -mod=vendor -ldflags="-s -w" -o $output_dir/release github.com/cloudfoundry/libbuildpack/shims/cmd/release
 popd &>/dev/null
 
 $output_dir/release "$BUILD_DIR"
