@@ -12,13 +12,13 @@ import (
 
 var _ = Describe("CF NodeJS Buildpack", func() {
 	var (
-		app, serviceBrokerApp                          *cutlass.App
-		serviceBrokerURL, serviceName, serviceOffering string
+		app, serviceBrokerApp                                  *cutlass.App
+		serviceBrokerURL, userProvidedService, serviceOffering string
 	)
 
 	BeforeEach(func() {
-		serviceName = "newrelic-" + cutlass.RandStringRunes(10)
-		serviceOffering = "newrelic-" + cutlass.RandStringRunes(10)
+		userProvidedService = "newrelic-" + cutlass.RandStringRunes(10)
+		serviceOffering = "newrelic"
 	})
 
 	AfterEach(func() {
@@ -26,18 +26,17 @@ var _ = Describe("CF NodeJS Buildpack", func() {
 
 		RunCF("purge-service-offering", "-f", serviceOffering)
 		RunCF("delete-service-broker", "-f", serviceOffering)
-		RunCF("delete-service", "-f", serviceName)
+		RunCF("delete-service", "-f", userProvidedService)
 
 		serviceBrokerApp = DestroyApp(serviceBrokerApp)
 	})
 
-	It("deploying a NodeJS app with NewRelic", func() {
+	FIt("deploying a NodeJS app with NewRelic", func() {
 		By("set up a service broker", func() {
 			serviceBrokerApp = cutlass.New(filepath.Join(bpDir, "fixtures", "fake_newrelic_service_broker"))
 			serviceBrokerApp.Buildpacks = []string{
 				"https://github.com/cloudfoundry/ruby-buildpack#master",
 			}
-			serviceBrokerApp.SetEnv("OFFERING_NAME", serviceOffering)
 			Expect(serviceBrokerApp.Push()).To(Succeed())
 			Eventually(func() ([]string, error) { return serviceBrokerApp.InstanceStates() }, 20*time.Second).Should(Equal([]string{"RUNNING"}))
 
@@ -57,10 +56,10 @@ var _ = Describe("CF NodeJS Buildpack", func() {
 		})
 
 		By("Pushing an app with a user provided service", func() {
-			RunCF("create-user-provided-service", serviceName, "-p", `{"licenseKey": "fake_new_relic_key3"}`)
+			RunCF("create-user-provided-service", userProvidedService, "-p", `{"licenseKey": "fake_new_relic_key3"}`)
 
 			app.Stdout.Reset()
-			RunCF("bind-service", app.Name, serviceName)
+			RunCF("bind-service", app.Name, userProvidedService)
 			Expect(app.Restart()).To(Succeed())
 
 			Eventually(app.Stdout.String).Should(ContainSubstring("&license_key=fake_new_relic_key3"))
@@ -69,17 +68,17 @@ var _ = Describe("CF NodeJS Buildpack", func() {
 		})
 
 		By("Unbinding and deleting the CUPS newrelic service", func() {
-			RunCF("unbind-service", app.Name, serviceName)
-			RunCF("delete-service", "-f", serviceName)
+			RunCF("unbind-service", app.Name, userProvidedService)
+			RunCF("delete-service", "-f", userProvidedService)
 		})
 
 		By("Pushing an app with a marketplace provided service", func() {
-			serviceFromBroker := "newrelic-sb-" + cutlass.RandStringRunes(10)
+			serviceInstanceName := "newrelic-" + cutlass.RandStringRunes(10)
 			RunCF("create-service-broker", serviceBrokerApp.Name, "username", "password", serviceBrokerURL, "--space-scoped")
-			RunCF("create-service", serviceOffering, "public", serviceFromBroker)
+			RunCF("create-service", serviceOffering, "public", serviceInstanceName)
 
 			app.Stdout.Reset()
-			RunCF("bind-service", app.Name, serviceFromBroker)
+			RunCF("bind-service", app.Name, serviceInstanceName)
 			Expect(app.Restart()).To(Succeed())
 
 			Eventually(app.Stdout.String).Should(ContainSubstring("&license_key=fake_new_relic_key2"))

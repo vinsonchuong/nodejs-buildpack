@@ -14,6 +14,7 @@ var _ = Describe("CF NodeJS Buildpack", func() {
 	var (
 		app, serviceBrokerApp                                             *cutlass.App
 		serviceBrokerURL, serviceNameOne, serviceNameTwo, serviceOffering string
+		err                                                               error
 	)
 
 	appConfig := func() (string, error) {
@@ -23,7 +24,7 @@ var _ = Describe("CF NodeJS Buildpack", func() {
 	BeforeEach(func() {
 		serviceNameOne = "appdynamics-" + cutlass.RandStringRunes(20)
 		serviceNameTwo = "app-dynamics-" + cutlass.RandStringRunes(20)
-		serviceOffering = "appdynamics-" + cutlass.RandStringRunes(20)
+		serviceOffering = "appdynamics"
 	})
 
 	AfterEach(func() {
@@ -43,11 +44,9 @@ var _ = Describe("CF NodeJS Buildpack", func() {
 			serviceBrokerApp.Buildpacks = []string{
 				"https://github.com/cloudfoundry/ruby-buildpack#master",
 			}
-			serviceBrokerApp.SetEnv("OFFERING_NAME", serviceOffering)
 			Expect(serviceBrokerApp.Push()).To(Succeed())
 			Eventually(func() ([]string, error) { return serviceBrokerApp.InstanceStates() }, 20*time.Second).Should(Equal([]string{"RUNNING"}))
 
-			var err error
 			serviceBrokerURL, err = serviceBrokerApp.GetUrl("")
 			Expect(err).ToNot(HaveOccurred())
 		})
@@ -96,13 +95,13 @@ var _ = Describe("CF NodeJS Buildpack", func() {
 		})
 
 		By("Pushing an app with a marketplace pr ovided service", func() {
-			serviceFromBroker := "appdynamics-sb-" + cutlass.RandStringRunes(10)
+			serviceInstance := "appdynamics-" + cutlass.RandStringRunes(10)
 			Expect(RunCF("create-service-broker", serviceBrokerApp.Name, "username", "password", serviceBrokerURL, "--space-scoped")).To(Succeed())
-			Expect(RunCF("create-service", serviceOffering, "public", serviceFromBroker)).To(Succeed())
+			Expect(RunCF("create-service", serviceOffering, "public", serviceInstance)).To(Succeed())
 
 			app.Stdout.Reset()
 
-			Expect(RunCF("bind-service", app.Name, serviceFromBroker)).To(Succeed())
+			Expect(RunCF("bind-service", app.Name, serviceInstance)).To(Succeed())
 			Expect(app.Restart()).To(Succeed())
 			Eventually(func() ([]string, error) { return app.InstanceStates() }, 20*time.Second).Should(Equal([]string{"RUNNING"}))
 
