@@ -9,7 +9,11 @@ GINKGO_NODES=${GINKGO_NODES:-3}
 GINKGO_ATTEMPTS=${GINKGO_ATTEMPTS:-2}
 export CF_STACK=${CF_STACK:-cflinuxfs3}
 
+~/workspace/npm-cnb/scripts/package.sh
+~/workspace/nodejs-cnb/scripts/package.sh
+~/workspace/nodejs-compat-cnb/scripts/package.sh
+
 pushd integration
     echo "Run Uncached Shim Buildpack"
-    ginkgo -r --flakeAttempts=$GINKGO_ATTEMPTS -nodes $GINKGO_NODES --slowSpecThreshold=60 -- --cached=false
+    ginkgo -r --flakeAttempts=$GINKGO_ATTEMPTS -nodes $GINKGO_NODES --slowSpecThreshold=60 -- --cached=true
 popd

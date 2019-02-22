@@ -74,7 +74,7 @@ func TestIntegration(t *testing.T) {
 func PushAppAndConfirm(app *cutlass.App) {
 	Expect(app.Push()).To(Succeed())
 	Eventually(func() ([]string, error) { return app.InstanceStates() }, 20*time.Second).Should(Equal([]string{"RUNNING"}))
-	//Expect(app.ConfirmBuildpack(buildpackVersion)).To(Succeed())
+	Expect(app.ConfirmBuildpack(buildpackVersion)).To(Succeed())
 }
 
 func DestroyApp(app *cutlass.App) *cutlass.App {

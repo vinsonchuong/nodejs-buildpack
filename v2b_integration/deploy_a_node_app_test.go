@@ -11,11 +11,11 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("CF NodeJS Buildpack", func() {
+var _ = FDescribe("CF NodeJS Buildpack", func() {
 	var app *cutlass.App
 	AfterEach(func() {
 		if app != nil {
-			app.Destroy()
+			//app.Destroy()
 		}
 		app = nil
 	})
@@ -26,7 +26,7 @@ var _ = Describe("CF NodeJS Buildpack", func() {
 				app = cutlass.New(filepath.Join("testdata", "node_version_range"))
 			})
 
-			It("resolves to a nodeJS version successfully", func() {
+			XIt("resolves to a nodeJS version successfully", func() {
 				PushAppAndConfirm(app)
 
 				Eventually(cutlass.StripColor(app.Stdout.String())).Should(MatchRegexp("NodeJS 6\\.\\d+\\.\\d+"))
@@ -39,7 +39,7 @@ var _ = Describe("CF NodeJS Buildpack", func() {
 				app = cutlass.New(filepath.Join("testdata", "node_version_6"))
 			})
 
-			It("resolves to a nodeJS version successfully", func() {
+			XIt("resolves to a nodeJS version successfully", func() {
 				PushAppAndConfirm(app)
 
 				Eventually(cutlass.StripColor(app.Stdout.String())).Should(MatchRegexp("NodeJS 6\\.\\d+\\.\\d+"))
@@ -66,7 +66,7 @@ var _ = Describe("CF NodeJS Buildpack", func() {
 				app = cutlass.New(filepath.Join("testdata", "without_node_version"))
 			})
 
-			It("resolves to the stable nodeJS version successfully", func() {
+			FIt("resolves to the default nodeJS version successfully", func() {
 				PushAppAndConfirm(app)
 
 				Eventually(cutlass.StripColor(app.Stdout.String())).Should(MatchRegexp("NodeJS 6\\.\\d+\\.\\d+"))
@@ -79,10 +79,10 @@ var _ = Describe("CF NodeJS Buildpack", func() {
 				app = cutlass.New(filepath.Join("testdata", "unreleased_node_version"))
 			})
 
-			It("displays a nice error message and gracefully fails", func() {
+			XIt("displays a nice error message and gracefully fails", func() {
 				Expect(app.Push()).ToNot(BeNil())
 
-				Eventually(app.Stdout.String, 2*time.Second).Should(ContainSubstring("Unable to install node: no match found for 9000.0.0"))
+				Eventually(app.Stdout.String, 2*time.Second).Should(MatchRegexp(`no valid dependencies for node 9000\.0\.0, and .* in`))
 				Expect(app.ConfirmBuildpack(buildpackVersion)).To(Succeed())
 			})
 		})
@@ -92,10 +92,10 @@ var _ = Describe("CF NodeJS Buildpack", func() {
 				app = cutlass.New(filepath.Join("testdata", "unsupported_node_version"))
 			})
 
-			It("displays a nice error messages and gracefully fails", func() {
+			XIt("displays a nice error messages and gracefully fails", func() {
 				Expect(app.Push()).ToNot(BeNil())
 
-				Eventually(app.Stdout.String, 2*time.Second).Should(ContainSubstring("Unable to install node: no match found for 4.1.1"))
+				Eventually(app.Stdout.String, 2*time.Second).Should(MatchRegexp(`no valid dependencies for node 4\.1\.1, and .* in`))
 				Expect(app.ConfirmBuildpack(buildpackVersion)).To(Succeed())
 			})
 		})
@@ -107,7 +107,7 @@ var _ = Describe("CF NodeJS Buildpack", func() {
 			app.SetEnv("OPTIMIZE_MEMORY", "true")
 		})
 
-		It("is running with autosized max_old_space_size", func() {
+		XIt("is running with autosized max_old_space_size", func() {
 			PushAppAndConfirm(app)
 
 			Expect(app.GetBody("/")).To(ContainSubstring("NodeOptions: --max_old_space_size=96"))
@@ -119,7 +119,7 @@ var _ = Describe("CF NodeJS Buildpack", func() {
 			app = cutlass.New(filepath.Join("testdata", "simple_app"))
 		})
 
-		It("is not running with autosized max_old_space_size", func() {
+		XIt("is not running with autosized max_old_space_size", func() {
 			PushAppAndConfirm(app)
 
 			Expect(app.GetBody("/")).To(ContainSubstring("NodeOptions: undefined"))
@@ -130,7 +130,7 @@ var _ = Describe("CF NodeJS Buildpack", func() {
 				app = cutlass.New(filepath.Join("testdata", "simple_app_with_nvmrc"))
 			})
 
-			It("deploys", func() {
+			XIt("deploys", func() {
 				PushAppAndConfirm(app)
 
 				Expect(app.GetBody("/")).To(ContainSubstring("NodeOptions: undefined"))
@@ -148,10 +148,6 @@ var _ = Describe("CF NodeJS Buildpack", func() {
 				By("does not output protip that recommends user vendors dependencies", func() {
 					Expect(app.Stdout.String()).ToNot(MatchRegexp("PRO TIP:(.*) It is recommended to vendor the application's Node.js dependencies"))
 				})
-
-				//By("not changing the app directory during staging", func() {
-				//	Expect(app).To(HaveUnchangedAppDir())
-				//})
 
 				if !cutlass.Cached {
 					By("with an uncached buildpack", func() {
@@ -189,13 +185,13 @@ var _ = Describe("CF NodeJS Buildpack", func() {
 			})
 		})
 
-		XContext("with an app with a yarn.lock and vendored dependencies", func() {
+		Context("with an app with a yarn.lock and vendored dependencies", func() {
 			BeforeEach(func() {
 				app = cutlass.New(filepath.Join("testdata", "with_yarn_vendored"))
 				app.SetEnv("BP_DEBUG", "true")
 			})
 
-			It("deploys without hitting the internet", func() {
+			PIt("deploys without hitting the internet", func() {
 				PushAppAndConfirm(app)
 
 				Expect(filepath.Join(app.Path, "node_modules")).To(BeADirectory())
@@ -254,27 +250,21 @@ var _ = Describe("CF NodeJS Buildpack", func() {
 				By("outputs protip that recommends user vendors dependencies", func() {
 					Eventually(app.Stdout.String).Should(MatchRegexp("PRO TIP:(.*) It is recommended to vendor the application's Node.js dependencies"))
 				})
-
-				//Expect(app).To(HaveUnchangedAppDir())
 			})
 
 			AssertUsesProxyDuringStagingIfPresent("no_vendored_dependencies")
 		})
 
-		XContext("with an app with a yarn.lock file", func() {
+		PContext("with an app with a yarn.lock file", func() {
 			BeforeEach(func() {
 				app = cutlass.New(filepath.Join("testdata", "with_yarn"))
 				app.SetEnv("BP_DEBUG", "true")
 			})
 
-			It("successfully deploys and vendors the dependencies via yarn", func() {
+			PIt("successfully deploys and vendors the dependencies via yarn", func() {
 				PushAppAndConfirm(app)
 
 				Expect(filepath.Join(app.Path, "node_modules")).ToNot(BeADirectory())
-
-				//By("not changing the app directory during staging", func() {
-				//	Expect(app).To(HaveUnchangedAppDir())
-				//})
 
 				Eventually(app.Stdout.String).Should(ContainSubstring("Running yarn in online mode"))
 
@@ -288,23 +278,23 @@ var _ = Describe("CF NodeJS Buildpack", func() {
 			AssertUsesProxyDuringStagingIfPresent("with_yarn")
 		})
 
-		XContext("with an app with an out of date yarn.lock", func() {
+		PContext("with an app with an out of date yarn.lock", func() {
 			BeforeEach(func() {
 				app = cutlass.New(filepath.Join("testdata", "out_of_date_yarn_lock"))
 			})
 
-			It("warns that yarn.lock is out of date", func() {
+			PIt("warns that yarn.lock is out of date", func() {
 				PushAppAndConfirm(app)
 				Eventually(app.Stdout.String).Should(ContainSubstring("yarn.lock is outdated"))
 			})
 		})
 
-		XContext("with an app with pre and post scripts", func() {
+		Context("with an app with pre and post scripts", func() {
 			BeforeEach(func() {
 				app = cutlass.New(filepath.Join("testdata", "pre_post_commands"))
 			})
 
-			It("runs the scripts through npm run", func() {
+			PIt("runs the scripts through npm run", func() {
 				PushAppAndConfirm(app)
 				Eventually(app.Stdout.String).Should(ContainSubstring("Running heroku-prebuild (npm)"))
 				Eventually(app.Stdout.String).Should(ContainSubstring("Running heroku-postbuild (npm)"))
@@ -312,7 +302,7 @@ var _ = Describe("CF NodeJS Buildpack", func() {
 				Expect(app.GetBody("/")).To(ContainSubstring("Text: Goodbye Buildpacks Team"))
 			})
 
-			It("runs the postinstall script in the app directory", func() {
+			PIt("runs the postinstall script in the app directory", func() {
 				PushAppAndConfirm(app)
 				Eventually(app.Stdout.String, 2*time.Second).Should(ContainSubstring("Current dir: /tmp/app"))
 			})
@@ -327,7 +317,7 @@ var _ = Describe("CF NodeJS Buildpack", func() {
 			app = cutlass.New(filepath.Join("testdata", "logenv"))
 		})
 
-		It("sets the NODE_HOME to correct value", func() {
+		XIt("sets the NODE_HOME to correct value", func() {
 			PushAppAndConfirm(app)
 			Eventually(app.Stdout.String).Should(MatchRegexp("Writing NODE_HOME"))
 
@@ -344,7 +334,8 @@ var _ = Describe("CF NodeJS Buildpack", func() {
 			app = cutlass.New(filepath.Join("testdata", "use-openssl-ca"))
 			app.SetEnv("SSL_CERT_FILE", "cert.pem")
 		})
-		It("uses the system CA store (or env)", func() {
+
+		XIt("uses the system CA store (or env)", func() {
 			PushAppAndConfirm(app)
 			Expect(app.GetBody("/")).To(ContainSubstring("Response over self signed https"))
 		})

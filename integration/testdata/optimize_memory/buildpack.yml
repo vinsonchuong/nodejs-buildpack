@@ -1,0 +1,2 @@
+nodejs:
+  optimize_memory: true
