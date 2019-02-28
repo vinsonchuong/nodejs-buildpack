@@ -9,7 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("override yml", func() {
+var _ = XDescribe("override yml", func() {
 	var app *cutlass.App
 	var buildpackName string
 	AfterEach(func() {

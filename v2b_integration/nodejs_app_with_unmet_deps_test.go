@@ -29,7 +29,7 @@ var _ = Describe("Node.js applications with unmet dependencies", func() {
 		})
 	})
 
-	XContext("package manager is yarn", func() {
+	Context("package manager is yarn", func() {
 		BeforeEach(func() {
 			app = cutlass.New(filepath.Join("testdata", "unmet_dep_yarn"))
 		})

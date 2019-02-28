@@ -8,9 +8,10 @@
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "heroku-prebuild": "echo Hello Buildpacks Team > text_1.txt",
-    "heroku-postbuild": "echo Goodbye Buildpacks Team > text_2.txt",
-    "postinstall": "echo \"Current dir: $PWD\""
+    "heroku-prebuild": "echo heroku-prebuild > text_1.txt",
+    "preinstall": "echo preinstall >> text_1.txt",
+    "heroku-postbuild": "echo heroku-postbuild >> text_1.txt",
+    "postinstall": "echo postinstall >> text_1.txt"
   },
   "author": "",
   "license": "BSD-2-Clause",

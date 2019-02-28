@@ -19,21 +19,37 @@ include_files:
 dependencies:
 - name: org.cloudfoundry.buildpacks.nodejs
   version: 0.0.4
-  uri: https://buildpacks.cloudfoundry.org/dependencies/org.cloudfoundry.buildpacks.nodejs/org.cloudfoundry.buildpacks.nodejs-0.0.4-any-stack-2c85f3bd.tgz
-  sha256: 2c85f3bd8b5e1fc4da91650c0e5ae528e20ddd2ab0d068ed54370ca56c2bc24c
+  uri: file:///Users/pivotal/workspace/nodejs-cnb/nodejs-cnb.tgz
+  sha256: 66bb5d6f6284283a435e7e7e4a67b6e88dc64a132aab5050cc5804309df257bc
   cf_stacks:
   - cflinuxfs2
   - cflinuxfs3
   source: https://github.com/cloudfoundry/nodejs-cnb/releases/download/v0.0.4/nodejs-cnb-0.0.4.tgz
   source_sha256: 2c85f3bd8b5e1fc4da91650c0e5ae528e20ddd2ab0d068ed54370ca56c2bc24c
 - name: org.cloudfoundry.buildpacks.npm
-  version: 0.0.3
-  uri: https://buildpacks.cloudfoundry.org/dependencies/org.cloudfoundry.buildpacks.npm/org.cloudfoundry.buildpacks.npm-0.0.3-any-stack-644b06a0.tgz
-  sha256: 644b06a0a5094ce3bee87b8c65fbe58c39bb4123a7e51da95ade105620490201
+  version: 0.0.4
+  uri: file:///Users/pivotal/workspace/npm-cnb/npm-cnb.tgz
+  sha256: f939e451343eac5e04e5904dc1e5ada7f4989dd48d94a2e8f8d01d14fcd5de9b
   cf_stacks:
   - cflinuxfs2
   - cflinuxfs3
   source: https://github.com/cloudfoundry/npm-cnb/releases/download/v0.0.3/npm-cnb.tgz
+- name: org.cloudfoundry.buildpacks.yarn
+  version: 0.0.2
+  uri: file:///Users/pivotal/workspace/yarn-cnb/yarn-cnb.tgz
+  sha256: 3517c38cdee1280e2b1b40dc7f8b8f152ad9e2fd04c447aec4104e15e1675e80
+  cf_stacks:
+  - cflinuxfs2
+  - cflinuxfs3
+  source: https://github.com/cloudfoundry/yarn-cnb/releases/download/v0.0.2/yarn-cnb-0.0.2.tgz
+- name: org.cloudfoundry.buildpacks.nodejs-compat
+  version: 0.0.1
+  uri: file:///Users/pivotal/workspace/nodejs-compat-cnb/nodejs-compat-cnb.tgz
+  sha256: 3a10fd00e9db0390b452553d04cdecdb7215a31a15f309579104711ce7503c19
+  cf_stacks:
+  - cflinuxfs2
+  - cflinuxfs3
+  source: https://github.com/cloudfoundry/nodejs-compat-cnb/releases/download/v0.0.1/nodejs-compat-cnb.tgz
 - name: v3-builder
   version: 0.0.2
   uri: https://buildpacks.cloudfoundry.org/dependencies/v3-builder/v3-builder-00b2a143-56e4f99a.tgz

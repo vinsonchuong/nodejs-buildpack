@@ -10,7 +10,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = XDescribe("CF NodeJS Buildpack", func() {
+var _ = PDescribe("CF NodeJS Buildpack", func() {
 	var (
 		app, serviceBrokerApp                                             *cutlass.App
 		serviceBrokerURL, serviceNameOne, serviceNameTwo, serviceOffering string
