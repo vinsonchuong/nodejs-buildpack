@@ -20,7 +20,7 @@ dependencies:
 - name: org.cloudfoundry.buildpacks.nodejs
   version: 0.0.4
   uri: file:///Users/pivotal/workspace/nodejs-cnb/nodejs-cnb.tgz
-  sha256: 66bb5d6f6284283a435e7e7e4a67b6e88dc64a132aab5050cc5804309df257bc
+  sha256: 7984751fa5fd5fe931c066712279cdc132ccb32249310b48a81fe72d59aea73d
   cf_stacks:
   - cflinuxfs2
   - cflinuxfs3
@@ -29,7 +29,7 @@ dependencies:
 - name: org.cloudfoundry.buildpacks.npm
   version: 0.0.4
   uri: file:///Users/pivotal/workspace/npm-cnb/npm-cnb.tgz
-  sha256: f939e451343eac5e04e5904dc1e5ada7f4989dd48d94a2e8f8d01d14fcd5de9b
+  sha256: 60332c8a79a5615f7bfce45fdb75c92aa41bad620525778757593095ab2caec3
   cf_stacks:
   - cflinuxfs2
   - cflinuxfs3
@@ -37,7 +37,7 @@ dependencies:
 - name: org.cloudfoundry.buildpacks.yarn
   version: 0.0.2
   uri: file:///Users/pivotal/workspace/yarn-cnb/yarn-cnb.tgz
-  sha256: 3517c38cdee1280e2b1b40dc7f8b8f152ad9e2fd04c447aec4104e15e1675e80
+  sha256: 706d1531c7c0d7739d8efb01d3453c2257fd4c89f2e7dd605a90c7db81c147d5
   cf_stacks:
   - cflinuxfs2
   - cflinuxfs3
@@ -45,7 +45,7 @@ dependencies:
 - name: org.cloudfoundry.buildpacks.nodejs-compat
   version: 0.0.1
   uri: file:///Users/pivotal/workspace/nodejs-compat-cnb/nodejs-compat-cnb.tgz
-  sha256: 3a10fd00e9db0390b452553d04cdecdb7215a31a15f309579104711ce7503c19
+  sha256: 5589e376f056f80c08e4713c33068ad94b5729e5d466946f1c05b488276dff97
   cf_stacks:
   - cflinuxfs2
   - cflinuxfs3

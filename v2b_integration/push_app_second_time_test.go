@@ -1,7 +1,6 @@
 package v2b_integration_test
 
 import (
-	"fmt"
 	"path/filepath"
 
 	"github.com/cloudfoundry/libbuildpack/cutlass"
@@ -10,7 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = FDescribe("pushing an app a second time", func() {
+var _ = Describe("pushing an app a second time", func() {
 	var app *cutlass.App
 	AfterEach(func() {
 		if app != nil {
@@ -28,22 +27,21 @@ var _ = FDescribe("pushing an app a second time", func() {
 		app.Buildpacks = []string{"nodejs_buildpack"}
 	})
 
-	Regexp := `.*/node\-[\d\.]+\-linux\-x64\-(cflinuxfs.*-)?[\da-f]+\.tgz`
-	DownloadRegexp := "Download from" + Regexp
+	//Regexp := `.*/node\-[\d\.]+\-linux\-x64\-(cflinuxfs.*-)?[\da-f]+\.tgz`
+	//DownloadRegexp := "Download from " + Regexp
 	//CopyRegexp := "Copy " + Regexp
 
 	It("uses the cache for manifest dependencies", func() {
 		PushAppAndConfirm(app)
-		Expect(app.Stdout.String()).To(MatchRegexp(DownloadRegexp))
-		//Expect(app.Stdout.String()).ToNot(MatchRegexp(CopyRegexp))
 
-		fmt.Println("First: ", app.Stdout.String())
+		Expect(app.Stdout.String()).To(ContainSubstring("Installing node_modules"))
+		Expect(app.Stdout.String()).NotTo(ContainSubstring("Reusing existing npm-cache"))
+
 		app.Stdout.Reset()
 		PushAppAndConfirm(app)
-		//Expect(app.Stdout.String()).To(MatchRegexp(CopyRegexp))
-		//Expect(app.Stdout.String()).ToNot(MatchRegexp(DownloadRegexp))
-		fmt.Println("\n\n\n======================================================================")
-		fmt.Println("\n\n\nSecond: ", app.Stdout.String())
-		Expect(true).To(BeFalse())
+
+		Expect(app.Stdout.String()).To(ContainSubstring("Installing node_modules"))
+		Expect(app.Stdout.String()).To(ContainSubstring("Reusing existing npm-cache"))
+
 	})
 })

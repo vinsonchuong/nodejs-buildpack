@@ -5,6 +5,7 @@ require (
 	github.com/BurntSushi/toml v0.3.1
 	github.com/Masterminds/semver v1.4.2
 	github.com/blang/semver v3.5.1+incompatible
+	github.com/cloudfoundry/cnb-tools v0.0.0-20190219172305-154ea1cc62b2 // indirect
 	github.com/cloudfoundry/libbuildpack v0.0.0-20190213200103-30ffb32767ef
 	github.com/elazarl/goproxy v0.0.0-20181111060418-2ce16c963a8a
 	github.com/golang/mock v1.2.0
@@ -20,7 +21,7 @@ require (
 	golang.org/x/build v0.0.0-20190221223049-69dd6b2c22e1
 	golang.org/x/crypto v0.0.0-20190219172222-a4c6cb3142f2
 	golang.org/x/net v0.0.0-20190213061140-3a22650c66bd
-	golang.org/x/sys v0.0.0-20181221143128-b4a75ba826a6
+	golang.org/x/sys v0.0.0-20190204203706-41f3e6584952
 	golang.org/x/text v0.3.1-0.20180807135948-17ff2d5776d2
 	golang.org/x/tools v0.0.0-20190221204921-83362c3779f5
 	gopkg.in/jarcoal/httpmock.v1 v1.0.0-20181117152235-275e9df93516
