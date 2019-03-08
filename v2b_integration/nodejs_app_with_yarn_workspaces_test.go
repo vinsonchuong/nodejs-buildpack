@@ -9,7 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = XDescribe("CF NodeJS Buildpack", func() {
+var _ = Describe("CF NodeJS Buildpack", func() {
 	var app *cutlass.App
 	AfterEach(func() {
 		if app != nil {

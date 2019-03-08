@@ -26,7 +26,7 @@ var _ = Describe("CF NodeJS Buildpack", func() {
 				app = cutlass.New(filepath.Join("testdata", "node_version_range"))
 			})
 
-			XIt("resolves to a nodeJS version successfully", func() {
+			It("resolves to a nodeJS version successfully", func() {
 				PushAppAndConfirm(app)
 
 				Eventually(cutlass.StripColor(app.Stdout.String())).Should(MatchRegexp("NodeJS 6\\.\\d+\\.\\d+"))
@@ -39,7 +39,7 @@ var _ = Describe("CF NodeJS Buildpack", func() {
 				app = cutlass.New(filepath.Join("testdata", "node_version_6"))
 			})
 
-			XIt("resolves to a nodeJS version successfully", func() {
+			It("resolves to a nodeJS version successfully", func() {
 				PushAppAndConfirm(app)
 
 				Eventually(cutlass.StripColor(app.Stdout.String())).Should(MatchRegexp("NodeJS 6\\.\\d+\\.\\d+"))
@@ -66,7 +66,7 @@ var _ = Describe("CF NodeJS Buildpack", func() {
 				app = cutlass.New(filepath.Join("testdata", "without_node_version"))
 			})
 
-			XIt("resolves to the default nodeJS version successfully", func() {
+			It("resolves to the default nodeJS version successfully", func() {
 				PushAppAndConfirm(app)
 
 				Eventually(cutlass.StripColor(app.Stdout.String())).Should(MatchRegexp("NodeJS 6\\.\\d+\\.\\d+"))
@@ -79,10 +79,10 @@ var _ = Describe("CF NodeJS Buildpack", func() {
 				app = cutlass.New(filepath.Join("testdata", "unreleased_node_version"))
 			})
 
-			XIt("displays a nice error message and gracefully fails", func() {
+			It("displays a nice error message and gracefully fails", func() {
 				Expect(app.Push()).ToNot(BeNil())
 
-				Eventually(app.Stdout.String, 2*time.Second).Should(MatchRegexp(`no valid dependencies for node 9000\.0\.0, and .* in`))
+				Eventually(app.Stdout.String, 2*time.Second).Should(MatchRegexp(`no valid dependencies for node,? 9000\.0\.0, and .* in`))
 				Expect(app.ConfirmBuildpack(buildpackVersion)).To(Succeed())
 			})
 		})
@@ -92,10 +92,10 @@ var _ = Describe("CF NodeJS Buildpack", func() {
 				app = cutlass.New(filepath.Join("testdata", "unsupported_node_version"))
 			})
 
-			XIt("displays a nice error messages and gracefully fails", func() {
+			It("displays a nice error messages and gracefully fails", func() {
 				Expect(app.Push()).ToNot(BeNil())
 
-				Eventually(app.Stdout.String, 2*time.Second).Should(MatchRegexp(`no valid dependencies for node 4\.1\.1, and .* in`))
+				Eventually(app.Stdout.String, 2*time.Second).Should(MatchRegexp(`no valid dependencies for node,? 4\.1\.1, and .* in`))
 				Expect(app.ConfirmBuildpack(buildpackVersion)).To(Succeed())
 			})
 		})
@@ -107,7 +107,7 @@ var _ = Describe("CF NodeJS Buildpack", func() {
 			app.SetEnv("OPTIMIZE_MEMORY", "true")
 		})
 
-		XIt("is running with autosized max_old_space_size", func() {
+		It("is running with autosized max_old_space_size", func() {
 			PushAppAndConfirm(app)
 
 			Expect(app.GetBody("/")).To(ContainSubstring("NodeOptions: --max_old_space_size=96"))
@@ -119,7 +119,7 @@ var _ = Describe("CF NodeJS Buildpack", func() {
 			app = cutlass.New(filepath.Join("testdata", "simple_app"))
 		})
 
-		XIt("is not running with autosized max_old_space_size", func() {
+		It("is not running with autosized max_old_space_size", func() {
 			PushAppAndConfirm(app)
 
 			Expect(app.GetBody("/")).To(ContainSubstring("NodeOptions: undefined"))
@@ -130,7 +130,7 @@ var _ = Describe("CF NodeJS Buildpack", func() {
 				app = cutlass.New(filepath.Join("testdata", "simple_app_with_nvmrc"))
 			})
 
-			XIt("deploys", func() {
+			It("deploys", func() {
 				PushAppAndConfirm(app)
 
 				Expect(app.GetBody("/")).To(ContainSubstring("NodeOptions: undefined"))
@@ -174,7 +174,7 @@ var _ = Describe("CF NodeJS Buildpack", func() {
 				}
 			})
 
-			XIt("deploys", func() {
+			It("deploys", func() {
 				app = cutlass.New(filepath.Join("testdata", "vendored_dependencies_with_binaries"))
 				app.SetEnv("BP_DEBUG", "true")
 				PushAppAndConfirm(app)
@@ -203,7 +203,7 @@ var _ = Describe("CF NodeJS Buildpack", func() {
 				app = cutlass.New(filepath.Join("testdata", "incomplete_node_modules"))
 			})
 
-			XIt("downloads missing dependencies from package.json", func() {
+			It("downloads missing dependencies from package.json", func() {
 				PushAppAndConfirm(app)
 				Expect(filepath.Join(app.Path, "node_modules")).To(BeADirectory())
 				Expect(filepath.Join(app.Path, "node_modules", "hashish")).ToNot(BeADirectory())
@@ -216,7 +216,7 @@ var _ = Describe("CF NodeJS Buildpack", func() {
 				app = cutlass.New(filepath.Join("testdata", "incomplete_package_json"))
 			})
 
-			XIt("does not overwrite the vendored modules not listed in package.json", func() {
+			It("does not overwrite the vendored modules not listed in package.json", func() {
 				PushAppAndConfirm(app)
 				Expect(app.GetBody("/")).To(Equal("Hello, World!"))
 
@@ -231,7 +231,7 @@ var _ = Describe("CF NodeJS Buildpack", func() {
 				app.SetEnv("BP_DEBUG", "true")
 			})
 
-			XIt("successfully deploys and vendors the dependencies", func() {
+			It("successfully deploys and vendors the dependencies", func() {
 				PushAppAndConfirm(app)
 
 				Expect(filepath.Join(app.Path, "node_modules")).ToNot(BeADirectory())
@@ -248,7 +248,7 @@ var _ = Describe("CF NodeJS Buildpack", func() {
 				app.SetEnv("BP_DEBUG", "true")
 			})
 
-			XIt("successfully deploys and vendors the dependencies via yarn", func() {
+			It("successfully deploys and vendors the dependencies via yarn", func() {
 				PushAppAndConfirm(app)
 
 				Expect(filepath.Join(app.Path, "node_modules")).ToNot(BeADirectory())
@@ -266,7 +266,7 @@ var _ = Describe("CF NodeJS Buildpack", func() {
 				app = cutlass.New(filepath.Join("testdata", "out_of_date_yarn_lock"))
 			})
 
-			XIt("warns that yarn.lock is out of date", func() {
+			It("warns that yarn.lock is out of date", func() {
 				PushAppAndConfirm(app)
 				Eventually(app.Stdout.String).Should(ContainSubstring("yarn.lock is outdated"))
 			})
@@ -277,12 +277,12 @@ var _ = Describe("CF NodeJS Buildpack", func() {
 				app = cutlass.New(filepath.Join("testdata", "pre_post_commands"))
 			})
 
-			XIt("runs the scripts through npm run", func() {
+			It("runs the scripts through npm run", func() {
 				PushAppAndConfirm(app)
 				Expect(app.GetBody("/")).To(ContainSubstring("Text: heroku-prebuild\npreinstall\npostinstall\nheroku-postbuild\n"))
 			})
 
-			XIt("runs the postinstall script in the app directory", func() {
+			It("runs the postinstall script in the app directory", func() {
 				PushAppAndConfirm(app)
 				Eventually(app.Stdout.String, 2*time.Second).Should(ContainSubstring("postinstall /home/vcap/app"))
 			})
@@ -297,7 +297,7 @@ var _ = Describe("CF NodeJS Buildpack", func() {
 			app = cutlass.New(filepath.Join("testdata", "logenv"))
 		})
 
-		XIt("sets the NODE_HOME to correct value", func() {
+		It("sets the NODE_HOME to correct value", func() {
 			PushAppAndConfirm(app)
 			Eventually(app.Stdout.String).Should(MatchRegexp("Writing NODE_HOME"))
 
@@ -315,7 +315,7 @@ var _ = Describe("CF NodeJS Buildpack", func() {
 			app.SetEnv("SSL_CERT_FILE", "cert.pem")
 		})
 
-		XIt("uses the system CA store (or env)", func() {
+		It("uses the system CA store (or env)", func() {
 			PushAppAndConfirm(app)
 			Expect(app.GetBody("/")).To(ContainSubstring("Response over self signed https"))
 		})
@@ -326,7 +326,7 @@ var _ = Describe("CF NodeJS Buildpack", func() {
 			app = cutlass.New(filepath.Join("testdata", "with_mysql"))
 		})
 
-		XIt("should push the app with mysql successfully", func() {
+		It("should push the app with mysql successfully", func() {
 			PushAppAndConfirm(app)
 		})
 	})

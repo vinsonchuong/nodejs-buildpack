@@ -22,6 +22,8 @@ github.com/cloudfoundry/cnb-tools v0.0.0-20190219172305-154ea1cc62b2 h1:28ef8Q5X
 github.com/cloudfoundry/cnb-tools v0.0.0-20190219172305-154ea1cc62b2/go.mod h1:4/XXo++Se0dkBKJIHUJcQBQqwZsSiEmUxd84Su8ER3E=
 github.com/cloudfoundry/libbuildpack v0.0.0-20190213200103-30ffb32767ef h1:w7ygmYUxQ6L8xg3jWkqWGWTkdtmmw/oVRMsEkLciWqI=
 github.com/cloudfoundry/libbuildpack v0.0.0-20190213200103-30ffb32767ef/go.mod h1:71Amz55p2zB9XJTgngPOQwTSP+FT4gIeGLe6XeQ2YDA=
+github.com/cloudfoundry/libbuildpack v0.0.0-20190307214535-cd9ee704eaa2 h1:bdpiq+BhZZ7N7RrxMuBLjSXZxOqEPymEeUf+CU/hPGs=
+github.com/cloudfoundry/libbuildpack v0.0.0-20190307214535-cd9ee704eaa2/go.mod h1:71Amz55p2zB9XJTgngPOQwTSP+FT4gIeGLe6XeQ2YDA=
 github.com/cloudfoundry/libcfbuildpack v1.42.0 h1:vHVF9t0Px4p0WsgCG2EkUTTyXxI3QgE95O+hMKUq7z0=
 github.com/cloudfoundry/libcfbuildpack v1.42.0/go.mod h1:C2AOm63Ca1GIBP7NdVhd8Q2gKenz600PVWqtOAbrN4o=
 github.com/coreos/go-systemd v0.0.0-20181012123002-c6f51f82210d/go.mod h1:F5haX7vjVVG0kc13fIWeqUViNPyEJxv/OmvnBo0Yme4=
