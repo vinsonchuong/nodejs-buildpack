@@ -1,4 +1,30 @@
 #!/usr/bin/env bash
+
+package_bp() {
+    bp_dir=$(~/workspace/$1/scripts/package.sh | grep "Buildpack packaged into: " | awk -F " " '{print $NF}')
+}
+
+
+update_yaml () {
+    shasum=$(shasum -a 256 "$1.tgz" | cut -f 1 -d " ")
+    echo "$shasum"
+    script=$(cat <<EOF
+require 'YAML'
+file = '/Users/pivotal/workspace/nodejs-buildpack/manifest.yml'
+m = YAML.load_file(file)
+m['dependencies'][$2]['sha256'] = '$shasum'
+m['dependencies'][$2]['uri'] = 'file://' + "$bp_dir" + ".tgz"
+File.open(file, 'w') {|f| f.write m.to_yaml }
+EOF
+)
+ruby -e "$script"
+}
+
+tarbp() {
+    tar -czvf "$1".tgz "$1"
+}
+
+
 set -euo pipefail
 
 cd "$( dirname "${BASH_SOURCE[0]}" )/.."
@@ -9,10 +35,16 @@ GINKGO_NODES=${GINKGO_NODES:-3}
 GINKGO_ATTEMPTS=${GINKGO_ATTEMPTS:-1}
 export CF_STACK=${CF_STACK:-cflinuxfs3}
 
-~/workspace/nodejs-compat-cnb/scripts/package.sh
-~/workspace/nodejs-cnb/scripts/package.sh
-~/workspace/npm-cnb/scripts/package.sh
-~/workspace/yarn-cnb/scripts/package.sh
+bp_dir=""
+BPCOUNTER=0
+for bp in nodejs-cnb npm-cnb yarn-cnb nodejs-compat-cnb; do
+    package_bp "$bp"
+    echo "created $bp_dir"
+    tarbp "$bp_dir"
+    update_yaml "$bp_dir" $BPCOUNTER
+    BPCOUNTER=$(expr $BPCOUNTER + 1)
+done
+
 
 pushd v2b_integration
     echo "Run Uncached Shim Buildpack For V2B specs"
