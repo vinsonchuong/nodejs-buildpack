@@ -277,6 +277,7 @@ func downloadFromURI(uri, fileName string) error {
 }
 
 func checkSha256(filePath, expectedSha256 string) error {
+	fmt.Println("FILEPATH: ", filePath)
 	content, err := ioutil.ReadFile(filePath)
 	if err != nil {
 		return err
