@@ -139,8 +139,8 @@ var _ = Describe("CF NodeJS Buildpack", func() {
 	})
 
 	Describe("Vendored node_modules", func() {
-		PContext("with an app that has vendored dependencies", func() {
-			PIt("deploys", func() {
+		Context("with an app that has vendored dependencies", func() {
+			It("deploys", func() {
 				app = cutlass.New(filepath.Join("testdata", "vendored_dependencies"))
 				app.SetEnv("BP_DEBUG", "true")
 				PushAppAndConfirm(app)
