@@ -138,7 +138,7 @@ var _ = Describe("CF NodeJS Buildpack", func() {
 		})
 	})
 
-	Describe("Vendored node_modules", func() {
+	FDescribe("Vendored node_modules", func() {
 		Context("with an app that has vendored dependencies", func() {
 			It("deploys", func() {
 				app = cutlass.New(filepath.Join("testdata", "vendored_dependencies"))

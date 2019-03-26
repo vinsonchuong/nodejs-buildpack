@@ -11,7 +11,7 @@ require (
 	github.com/golang/protobuf v1.2.0
 	github.com/google/subcommands v0.0.0-20181012225330-46f0354f6315
 	github.com/inconshreveable/go-vhost v0.0.0-20160627193104-06d84117953b
-	github.com/onsi/ginkgo v1.7.0
+	github.com/onsi/ginkgo v1.8.0
 	github.com/onsi/gomega v1.4.3
 	github.com/rogpeppe/go-charset v0.0.0-20180617210344-2471d30d28b4
 	github.com/tidwall/gjson v1.1.3

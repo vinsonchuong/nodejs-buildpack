@@ -44,6 +44,7 @@ export CF_STACK=${CF_STACK:-cflinuxfs3}
 bp_dir=""
 BPCOUNTER=0
 for bp in nodejs-cnb npm-cnb yarn-cnb nodejs-compat-cnb; do
+    echo "packaging bp"
     package_bp "$bp"
     echo "created $bp_dir"
     #tarbp "$bp_dir"
