@@ -359,7 +359,7 @@ var _ = Describe("Supply", func() {
 
 		Context("node version is 'safe' semver", func() {
 			It("does not log anything", func() {
-				supplier.PackageJSONNodeVersion = "~>6"
+				supplier.PackageJSONNodeVersion = "~>10"
 				supplier.WarnNodeEngine()
 				Expect(buffer.String()).To(Equal(""))
 			})
