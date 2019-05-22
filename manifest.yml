@@ -26,24 +26,6 @@ dependencies:
   - cflinuxfs3
   source: https://github.com/buildpack/lifecycle/releases/download/v0.2.0/lifecycle-v0.2.0%2Blinux.x86-64.tgz
   source_sha256: 0710e5bd8c952eb95353fa14ce66bb686f13de411aad86e2715f3ac5680ab5a0
-- name: org.cloudfoundry.buildpacks.nodejs
-  version: 0.0.8
-  uri: https://buildpacks.cloudfoundry.org/dependencies/org.cloudfoundry.buildpacks.nodejs/org.cloudfoundry.buildpacks.nodejs-0.0.8-any-stack-b75d0983.tgz
-  sha256: b75d0983831fc10e55076d7c2a7aa52b0131964c48eaa8de5d19d30a3e2b1abb
-  cf_stacks:
-  - cflinuxfs2
-  - cflinuxfs3
-  source: https://github.com/cloudfoundry/nodejs-cnb/archive/v0.0.8.tar.gz
-  source_sha256: 6d1a5d98792acc2f07705abec5a63674577c5659aea7e3621dc20ea8d10456cd
-- name: org.cloudfoundry.buildpacks.npm
-  version: 0.0.7
-  uri: https://buildpacks.cloudfoundry.org/dependencies/org.cloudfoundry.buildpacks.npm/org.cloudfoundry.buildpacks.npm-0.0.7-any-stack-60a7a2f8.tgz
-  sha256: 60a7a2f8ad6e1a0a8a1fe0b546cf5e038f5da8a908ef15401a57e644015bd5c8
-  cf_stacks:
-  - cflinuxfs2
-  - cflinuxfs3
-  source: https://github.com/cloudfoundry/npm-cnb/archive/v0.0.7.tar.gz
-  source_sha256: 12aff798caf9ebd79e21676cd809a01c22df79cbefcaacb90457b7ba27897786
 - name: org.cloudfoundry.nodejs
   version: 0.0.10
   uri: https://buildpacks.cloudfoundry.org/dependencies/org.cloudfoundry.nodejs/org.cloudfoundry.nodejs-0.0.10-any-stack-49b38678.tgz
@@ -51,7 +33,7 @@ dependencies:
   cf_stacks:
   - cflinuxfs2
   - cflinuxfs3
-  source: https://github.com/cloudfoundry/nodejs-cnb/archive/v0.0.10.tar.gz
+  source: /Users/pivotal/workspace/nodejs-cnb
   source_sha256: 5746660514b63e13c195895f0b103eb53e775278ac0dbbe250fdabcd18ddc466
 - name: org.cloudfoundry.npm
   version: 0.0.8
@@ -60,7 +42,25 @@ dependencies:
   cf_stacks:
   - cflinuxfs2
   - cflinuxfs3
-  source: https://github.com/cloudfoundry/npm-cnb/archive/v0.0.8.tar.gz
+  source: /Users/pivotal/workspace/npm-cnb
   source_sha256: d1cb92853cf317a6c96c29e208e0ccecc9c352331269e6b0f5054d44df98d70c
+- name: org.cloudfoundry.yarn
+  version: 0.0.6
+  uri: file:///Users/pivotal/workspace/yarn-cnb/yarn-cnb.tgz
+  sha256: 352e37de4d67c1cb283411fcaf5aa7514d38de3fbaa47ddf3563e8028683a00d
+  cf_stacks:
+  - cflinuxfs2
+  - cflinuxfs3
+  source: /Users/pivotal/workspace/yarn-cnb/
+  source_sha256: 0d434f36a82bb7f09cd7f56459a0e75dd029ec8c29d50c9d6c4e51f0d93abd58
+- name: org.cloudfoundry.nodejs-compat
+  version: 0.0.1
+  uri: file:///Users/pivotal/workspace/nodejs-compat-cnb/nodejs-compat-cnb.tgz
+  sha256: 6a1270a974fe581a47c97248a0be650a2b81b96395bce052702de0240e9f68a2
+  cf_stacks:
+  - cflinuxfs2
+  - cflinuxfs3
+  source: /Users/pivotal/workspace/nodejs-compat-cnb/
+  source_sha256: 0d434f36a82bb7f09cd7f56459a0e75dd029ec8c29d50c9d6c4e51f0d93abd58
 pre_package: scripts/build.sh
 default_versions: []

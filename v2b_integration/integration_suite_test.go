@@ -1,4 +1,4 @@
-package v2b_integration_test
+package integration_test
 
 import (
 	"encoding/json"
@@ -32,7 +32,7 @@ func init() {
 var _ = SynchronizedBeforeSuite(func() []byte {
 	// Run once
 	if buildpackVersion == "" {
-		packagedBuildpack, err := cutlass.PackageUniquelyVersionedBuildpack(os.Getenv("CF_STACK"), ApiHasStackAssociation())
+		packagedBuildpack, err := cutlass.PackageShimmedBuildpack(os.Getenv("CF_STACK"))
 		Expect(err).NotTo(HaveOccurred(), "failed to package buildpack")
 
 		data, err := json.Marshal(packagedBuildpack)
@@ -74,7 +74,7 @@ func TestIntegration(t *testing.T) {
 func PushAppAndConfirm(app *cutlass.App) {
 	Expect(app.Push()).To(Succeed())
 	Eventually(func() ([]string, error) { return app.InstanceStates() }, 20*time.Second).Should(Equal([]string{"RUNNING"}))
-	//Expect(app.ConfirmBuildpack(buildpackVersion)).To(Succeed())
+	Expect(app.ConfirmBuildpack(buildpackVersion)).To(Succeed())
 }
 
 func DestroyApp(app *cutlass.App) *cutlass.App {

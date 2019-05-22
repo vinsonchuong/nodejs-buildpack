@@ -1,4 +1,4 @@
-package v2b_integration_test
+package integration_test
 
 import (
 	"path/filepath"
@@ -29,9 +29,9 @@ var _ = Describe("override yml", func() {
 		}
 
 		buildpackName = "override_yml_" + cutlass.RandStringRunes(5)
-		Expect(cutlass.CreateOrUpdateBuildpack(buildpackName, filepath.Join("testdata", "overrideyml_bp"), "")).To(Succeed())
+		Expect(cutlass.CreateOrUpdateBuildpack(buildpackName, filepath.Join(bpDir, "v2b_integration", "testdata", "overrideyml_bp"), "")).To(Succeed())
 
-		app = cutlass.New(filepath.Join("testdata", "simple_app"))
+		app = cutlass.New(filepath.Join(bpDir, "v2b_integration", "testdata", "simple_app"))
 		app.Buildpacks = []string{buildpackName + "_buildpack", "nodejs_buildpack"}
 	})
 
