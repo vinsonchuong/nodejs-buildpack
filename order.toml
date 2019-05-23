@@ -6,10 +6,10 @@ buildpacks = [
   { id = "org.cloudfoundry.yarn", version = "latest" }
 ]
 
-#[[groups]]
-#labels = ["nodejs", "npm"]
-#buildpacks = [
-#  { id = "org.cloudfoundry.nodejs-compat", version = "latest", optional = true },
-#  { id = "org.cloudfoundry.nodejs", version = "latest" },
-#  { id = "org.cloudfoundry.npm", version = "latest" }
-#]
+[[groups]]
+labels = ["nodejs", "npm"]
+buildpacks = [
+  { id = "org.cloudfoundry.nodejs-compat", version = "latest", optional = true },
+  { id = "org.cloudfoundry.nodejs", version = "latest" },
+  { id = "org.cloudfoundry.npm", version = "latest" }
+]
