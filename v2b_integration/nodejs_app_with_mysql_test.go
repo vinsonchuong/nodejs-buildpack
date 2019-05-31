@@ -22,7 +22,7 @@ var _ = Describe("CF NodeJS Buildpack", func() {
 			app = cutlass.New(filepath.Join(bpDir, "v2b_integration", "testdata", "with_mysql"))
 		})
 
-		XIt("should push the app with mysql successfully", func() {
+		It("should push the app with mysql successfully", func() {
 			PushAppAndConfirm(app)
 		})
 	})

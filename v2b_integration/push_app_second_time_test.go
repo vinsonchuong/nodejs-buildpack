@@ -30,7 +30,7 @@ var _ = Describe("pushing an app a second time", func() {
 	downloadRegexp := `Downloading from .*/node\-[\d\.]+\-linux\-x64\-(cflinuxfs.*-)?[\da-f]+\.tgz`
 	copyRegexp := "NodeJS .*: Reusing cached layer"
 
-	XIt("uses the cache for manifest dependencies", func() {
+	It("uses the cache for manifest dependencies", func() {
 		PushAppAndConfirm(app)
 		Expect(app.Stdout.ANSIStrippedString()).To(MatchRegexp(downloadRegexp))
 		Expect(app.Stdout.ANSIStrippedString()).ToNot(MatchRegexp(copyRegexp))

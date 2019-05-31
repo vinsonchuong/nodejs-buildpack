@@ -32,7 +32,7 @@ var _ = Describe("running supply buildpacks before the nodejs buildpack", func()
 			app.Disk = "1G"
 		})
 
-		XIt("finds the supplied dependency in the runtime container", func() {
+		It("finds the supplied dependency in the runtime container", func() {
 			PushAppAndConfirm(app)
 			Expect(app.Stdout.String()).To(ContainSubstring("Supplying Dotnet Core"))
 			Expect(app.GetBody("/")).To(MatchRegexp(`dotnet: \d+\.\d+\.\d+`))

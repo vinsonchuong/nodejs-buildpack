@@ -23,7 +23,7 @@ var _ = Describe("CF NodeJS Buildpack", func() {
 			app = cutlass.New(filepath.Join(bpDir, "v2b_integration", "testdata", "npm_version_with_minor_x"))
 		})
 
-		XIt("should not attempt to download npm because it should match existing version", func() {
+		It("should not attempt to download npm because it should match existing version", func() {
 			PushAppAndConfirm(app)
 			Expect(app.Stdout.String()).ToNot(ContainSubstring("Downloading and installing npm 6.4.x"))
 		})

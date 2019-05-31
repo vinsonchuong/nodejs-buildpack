@@ -10,6 +10,9 @@ GINKGO_ATTEMPTS=${GINKGO_ATTEMPTS:-1}
 export CF_STACK=${CF_STACK:-cflinuxfs3}
 
 pushd v2b_integration
-    echo "Run Uncached Shim Buildpack For V2B specs"
-    ginkgo -r --flakeAttempts=$GINKGO_ATTEMPTS -nodes $GINKGO_NODES --slowSpecThreshold=60 -- --cached=false
+#    echo "Run Uncached Shim Buildpack For V2B specs"
+#    ginkgo -r --flakeAttempts=$GINKGO_ATTEMPTS -nodes $GINKGO_NODES --slowSpecThreshold=60 -- --cached=false
+
+    echo "Run Cached Shim Buildpack For V2B specs"
+    ginkgo -r --flakeAttempts=$GINKGO_ATTEMPTS -nodes $GINKGO_NODES --slowSpecThreshold=60 -- --cached=true
 popd
